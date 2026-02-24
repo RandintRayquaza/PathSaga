@@ -2,8 +2,10 @@ import { useDispatch } from 'react-redux';
 import { toggleTask } from '../../redux/slices/userSlice';
 import Card from '../ui/Card';
 import { CheckSquare, Square, ClipboardList } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function TasksSection({ tasks = [] }) {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const done = tasks.filter((t) => t.done).length;
 
@@ -15,8 +17,8 @@ export default function TasksSection({ tasks = [] }) {
             <ClipboardList className="w-4 h-4 text-ink-300" />
           </div>
           <div>
-            <p className="text-xs text-ink-500">Recommended</p>
-            <h2 className="font-semibold text-ink-100">Actions</h2>
+            <p className="text-xs text-ink-500">{t('dashboard.recommended')}</p>
+            <h2 className="font-semibold text-ink-100">{t('dashboard.actions')}</h2>
           </div>
         </div>
         {tasks.length > 0 && (
@@ -25,7 +27,7 @@ export default function TasksSection({ tasks = [] }) {
       </div>
 
       {tasks.length === 0 ? (
-        <p className="text-sm text-ink-500 text-center py-6">Tasks will appear based on your roadmap.</p>
+        <p className="text-sm text-ink-500 text-center py-6">{t('dashboard.no_tasks')}</p>
       ) : (
         <ul className="space-y-1">
           {tasks.map(({ id, label, done }) => (
@@ -40,7 +42,7 @@ export default function TasksSection({ tasks = [] }) {
                   : <Square      className="w-4 h-4 text-ink-600 flex-none mt-0.5 group-hover:text-ink-400 transition-colors" />
                 }
                 <span className={`text-sm leading-snug ${done ? 'text-ink-600 line-through' : 'text-ink-300'}`}>
-                  {label}
+                  {t(label)}
                 </span>
               </button>
             </li>

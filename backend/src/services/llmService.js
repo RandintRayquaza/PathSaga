@@ -8,7 +8,7 @@ const getGeminiClient = () => {
   return new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 };
 
-// ─── Mock responses (used when Gemini quota is exhausted or USE_MOCK=true) ───
+
 
 const mockCareerRecommendation = ({ assessmentScores }) => ({
   recommendedCareers: ['UX Designer', 'Product Manager', 'Frontend Developer'],

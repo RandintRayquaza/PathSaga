@@ -1,73 +1,38 @@
-/* Hardcoded assessment questions — replace with API data when ready */
+/* Hardcoded assessment questions — keys point to i18n JSON files */
 export const QUESTIONS = [
   {
     key: 'workStyle',
-    question: 'How do you prefer to work?',
-    options: [
-      'Independently on focused tasks',
-      'In a small collaborative team',
-      'Managing and leading a group',
-      'Varies — I adapt to what\'s needed',
-    ],
+    question: 'data.q1',
+    options: ['data.q1o1', 'data.q1o2', 'data.q1o3', 'data.q1o4'],
   },
   {
     key: 'problemType',
-    question: 'What kind of problems do you enjoy solving most?',
-    options: [
-      'Technical or analytical problems with clear solutions',
-      'Creative problems with many possible answers',
-      'People-focused problems involving empathy',
-      'Strategic problems about systems and organisations',
-    ],
+    question: 'data.q2',
+    options: ['data.q2o1', 'data.q2o2', 'data.q2o3', 'data.q2o4'],
   },
   {
     key: 'motivation',
-    question: 'What motivates you most in a career?',
-    options: [
-      'Making a measurable impact on people\'s lives',
-      'Continuous learning and intellectual growth',
-      'Building something of my own',
-      'Financial stability and career progression',
-    ],
+    question: 'data.q3',
+    options: ['data.q3o1', 'data.q3o2', 'data.q3o3', 'data.q3o4'],
   },
   {
     key: 'environment',
-    question: 'What work environment suits you best?',
-    options: [
-      'Fast-paced startup with lots of change',
-      'Structured organisation with clear processes',
-      'Creative studio or agency',
-      'Remote and flexible with autonomy',
-    ],
+    question: 'data.q4',
+    options: ['data.q4o1', 'data.q4o2', 'data.q4o3', 'data.q4o4'],
   },
   {
     key: 'strength',
-    question: 'Which of these best describes your strongest skill?',
-    options: [
-      'Logical thinking and pattern recognition',
-      'Communication and relationship building',
-      'Visual thinking and creative execution',
-      'Organisation, planning, and follow-through',
-    ],
+    question: 'data.q5',
+    options: ['data.q5o1', 'data.q5o2', 'data.q5o3', 'data.q5o4'],
   },
   {
     key: 'riskAppetite',
-    question: 'How do you feel about uncertainty and risk?',
-    options: [
-      'I thrive in ambiguity — it excites me',
-      'I\'m okay with some risk if the reward is clear',
-      'I prefer stability but can handle change',
-      'I work best with predictability and structure',
-    ],
+    question: 'data.q6',
+    options: ['data.q6o1', 'data.q6o2', 'data.q6o3', 'data.q6o4'],
   },
   {
     key: 'impact',
-    question: 'How do you want to spend most of your working hours?',
-    options: [
-      'Building products, tools, or systems',
-      'Helping and advising people directly',
-      'Creating content, art, or experiences',
-      'Researching, analysing, and generating insights',
-    ],
+    question: 'data.q7',
+    options: ['data.q7o1', 'data.q7o2', 'data.q7o3', 'data.q7o4'],
   },
 ];

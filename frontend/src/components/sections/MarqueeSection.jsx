@@ -1,19 +1,22 @@
 import { Zap, Brain, TrendingUp, Map, Mic } from 'lucide-react';
 
+import { useTranslation } from 'react-i18next';
+
 const ITEMS = [
-  { icon: Zap,         label: 'Career Assessment'   },
-  { icon: Brain,       label: 'AI Career Match'      },
-  { icon: TrendingUp,  label: 'Skill Gap Detection'  },
-  { icon: Map,         label: '3-Phase Roadmap'      },
-  { icon: Mic,         label: 'Voice Assistant'       },
-  { icon: Zap,         label: 'Career Assessment'   },
-  { icon: Brain,       label: 'AI Career Match'      },
-  { icon: TrendingUp,  label: 'Skill Gap Detection'  },
-  { icon: Map,         label: '3-Phase Roadmap'      },
-  { icon: Mic,         label: 'Voice Assistant'       },
+  { icon: Zap,         label: 'marquee.assess'   },
+  { icon: Brain,       label: 'marquee.match'    },
+  { icon: TrendingUp,  label: 'marquee.gap'      },
+  { icon: Map,         label: 'marquee.roadmap'  },
+  { icon: Mic,         label: 'marquee.voice'    },
+  { icon: Zap,         label: 'marquee.assess'   },
+  { icon: Brain,       label: 'marquee.match'    },
+  { icon: TrendingUp,  label: 'marquee.gap'      },
+  { icon: Map,         label: 'marquee.roadmap'  },
+  { icon: Mic,         label: 'marquee.voice'    },
 ];
 
 export default function MarqueeSection() {
+  const { t } = useTranslation();
   return (
     <section className="py-5 border-y border-ink-800 bg-ink-900/50 overflow-hidden" aria-label="Key features">
       {/* Fade masks */}
@@ -29,7 +32,7 @@ export default function MarqueeSection() {
               className="flex items-center gap-2.5 flex-none text-ink-300 px-4"
             >
               <Icon className="w-4 h-4 text-lime-400 flex-none" />
-              <span className="text-sm font-medium whitespace-nowrap">{label}</span>
+              <span className="text-sm font-medium whitespace-nowrap">{t(label)}</span>
               <span className="ml-4 text-ink-700">·</span>
             </div>
           ))}

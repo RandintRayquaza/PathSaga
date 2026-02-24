@@ -6,8 +6,10 @@ import { QUESTIONS } from '../utils/assessmentData';
 import StepIndicator from '../components/ui/StepIndicator';
 import Button from '../components/ui/Button';
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function Assessment() {
+  const { t } = useTranslation();
   const dispatch  = useDispatch();
   const navigate  = useNavigate();
   const { currentStep, answers } = useSelector((s) => s.assessment);
@@ -35,13 +37,15 @@ export default function Assessment() {
           <span className="font-display text-xl text-ink-50">
             Path<span className="text-lime-400">Saga</span>
           </span>
-          <p className="text-sm text-ink-500 mt-1">Career Assessment</p>
+          <p className="text-sm text-ink-500 mt-1">{t('assessment.title')}</p>
         </div>
 
         {/* Progress */}
         <div className="flex items-center justify-between mb-6">
           <StepIndicator current={currentStep} total={QUESTIONS.length} />
-          <span className="text-xs text-ink-500">{currentStep + 1} / {QUESTIONS.length}</span>
+          <span className="text-xs text-ink-500">
+            {t('assessment.step_count', { current: currentStep + 1, total: QUESTIONS.length })}
+          </span>
         </div>
 
         {/* Question card with AnimatePresence for smooth transitions */}
@@ -55,11 +59,11 @@ export default function Assessment() {
             className="bg-ink-900 border border-ink-700 rounded-2xl p-6 md:p-8"
           >
             <h2 className="font-display text-xl md:text-2xl text-ink-50 mb-6 leading-tight">
-              {q.question}
+              {t(q.question)}
             </h2>
 
             <fieldset>
-              <legend className="sr-only">{q.question}</legend>
+              <legend className="sr-only">{t(q.question)}</legend>
               <div className="space-y-3">
                 {q.options.map((opt) => {
                   const active = selected === opt;
@@ -78,7 +82,7 @@ export default function Assessment() {
                           ? 'bg-lime-400/10 border-lime-400 text-lime-300 font-medium shadow-[0_0_12px_rgba(200,241,53,0.08)]'
                           : 'bg-ink-800 border-ink-600 text-ink-300 group-hover:border-ink-400'
                       }`}>
-                        {opt}
+                        {t(opt)}
                       </div>
                     </label>
                   );
@@ -89,10 +93,10 @@ export default function Assessment() {
             {/* Nav buttons */}
             <div className="flex items-center justify-between mt-8">
               <Button variant="ghost" size="sm" onClick={() => dispatch(prevStep())} disabled={currentStep === 0}>
-                <ChevronLeft className="w-4 h-4" /> Back
+                <ChevronLeft className="w-4 h-4" /> {t('assessment.btn_back')}
               </Button>
               <Button onClick={handleNext} disabled={!selected}>
-                {isLast ? <>See Results <ArrowRight className="w-4 h-4" /></> : <>Next <ChevronRight className="w-4 h-4" /></>}
+                {isLast ? <>{t('assessment.btn_results')} <ArrowRight className="w-4 h-4" /></> : <>{t('assessment.btn_next')} <ChevronRight className="w-4 h-4" /></>}
               </Button>
             </div>
           </motion.div>

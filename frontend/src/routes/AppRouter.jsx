@@ -11,6 +11,8 @@ const Onboarding = lazy(() => import('../pages/Onboarding'));
 const Login      = lazy(() => import('../auth/Login'));
 const Signup     = lazy(() => import('../auth/Signup'));
 const NotFound   = lazy(() => import('../pages/NotFound'));
+const AiChat     = lazy(() => import('../pages/AiChat'));
+const Profile    = lazy(() => import('../pages/Profile'));
 
 function PrivateRoute({ children }) {
   const isAuth = useSelector((s) => s.auth.isAuthenticated);
@@ -27,6 +29,8 @@ export default function AppRouter() {
         <Route path="/onboarding" element={<PrivateRoute><Onboarding /></PrivateRoute>} />
         <Route path="/assessment" element={<PrivateRoute><Assessment /></PrivateRoute>} />
         <Route path="/dashboard"  element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="/aichat"     element={<PrivateRoute><AiChat /></PrivateRoute>} />
+        <Route path="/profile"    element={<PrivateRoute><Profile /></PrivateRoute>} />
         <Route path="*"           element={<NotFound />} />
       </Routes>
     </Suspense>

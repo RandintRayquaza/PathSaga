@@ -7,11 +7,12 @@ import OnboardingStep1 from '../components/ui/OnboardingStep1';
 import OnboardingStep2 from '../components/ui/OnboardingStep2';
 import OnboardingStep3 from '../components/ui/OnboardingStep3';
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const STEP_META = [
-  { title: 'Your Education',  subtitle: 'Tell us about your current studies'  },
-  { title: 'Your Interests',  subtitle: 'What topics light you up?'           },
-  { title: 'What\'s Next?',   subtitle: 'Choose how you want to continue'     },
+  { title: 'onboarding.s1_title',  subtitle: 'onboarding.s1_sub'  },
+  { title: 'onboarding.s2_title',  subtitle: 'onboarding.s2_sub'  },
+  { title: 'onboarding.s3_title',  subtitle: 'onboarding.s3_sub'  },
 ];
 
 /* Validate each step before allowing Next */
@@ -23,6 +24,7 @@ function canProceed(step, state) {
 }
 
 export default function Onboarding() {
+  const { t } = useTranslation();
   const dispatch  = useDispatch();
   const navigate  = useNavigate();
   const state     = useSelector((s) => s.onboarding);
@@ -57,13 +59,15 @@ export default function Onboarding() {
           {/* Step indicator + counter */}
           <div className="flex items-center justify-between mb-6">
             <StepIndicator current={step} total={STEP_META.length} />
-            <span className="text-xs text-ink-500">Step {step + 1} of {STEP_META.length}</span>
+            <span className="text-xs text-ink-500">
+              {t('onboarding.step_counter', { current: step + 1, total: STEP_META.length })}
+            </span>
           </div>
 
           {/* Heading */}
           <div className="mb-6">
-            <h1 className="font-display text-2xl text-ink-50 mb-1">{meta.title}</h1>
-            <p className="text-sm text-ink-400">{meta.subtitle}</p>
+            <h1 className="font-display text-2xl text-ink-50 mb-1">{t(meta.title)}</h1>
+            <p className="text-sm text-ink-400">{t(meta.subtitle)}</p>
           </div>
 
           {/* Step content */}
@@ -74,11 +78,11 @@ export default function Onboarding() {
           {/* Navigation buttons */}
           <div className="flex items-center justify-between mt-8">
             <Button variant="ghost" size="sm" onClick={() => dispatch(prevStep())} disabled={step === 0}>
-              <ChevronLeft className="w-4 h-4" /> Back
+              <ChevronLeft className="w-4 h-4" /> {t('onboarding.btn_back')}
             </Button>
 
             <Button onClick={handleNext} disabled={!valid}>
-              {isLast ? <>Let\'s Go <ArrowRight className="w-4 h-4" /></> : <>Next <ChevronRight className="w-4 h-4" /></>}
+              {isLast ? <>{t('onboarding.btn_go')} <ArrowRight className="w-4 h-4" /></> : <>{t('onboarding.btn_next')} <ChevronRight className="w-4 h-4" /></>}
             </Button>
           </div>
         </div>

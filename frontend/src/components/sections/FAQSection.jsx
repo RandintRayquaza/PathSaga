@@ -1,41 +1,46 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const FAQS = [
-  { q: 'Is PathSaga free?',                        a: 'The core assessment, career matching, and roadmap are completely free to use.' },
-  { q: 'Who is PathSaga for?',                     a: 'School students, college students, and early-career professionals who want clarity on their career direction.' },
-  { q: 'How does the career matching work?',       a: 'Our AI analyses your assessment answers across multiple dimensions — interests, values, working style — and surfaces careers that align with your profile.' },
-  { q: 'Can I retake the assessment?',             a: 'Yes. You can retake anytime, and your roadmap will update based on your new answers.' },
-  { q: 'Is my data private?',                      a: 'Your data is stored securely and never shared with or sold to third parties.' },
+  { q: 'faq.q1', a: 'faq.a1' },
+  { q: 'faq.q2', a: 'faq.a2' },
+  { q: 'faq.q3', a: 'faq.a3' },
+  { q: 'faq.q4', a: 'faq.a4' },
+  { q: 'faq.q5', a: 'faq.a5' },
 ];
 
 function FAQItem({ q, a }) {
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation();
   return (
     <div className="border-b border-ink-800 last:border-0">
       <button
-        className="w-full flex items-center justify-between py-4 text-left gap-4"
+        className="w-full flex items-center justify-between py-4 md:py-6 text-left gap-4 group"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
       >
-        <span className="text-sm font-medium text-ink-200">{q}</span>
+        <span className="text-sm font-medium text-ink-200 group-hover:text-lime-400 transition-colors">{t(q)}</span>
         <ChevronDown className={`w-4 h-4 text-ink-500 flex-none transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
-      {open && <p className="pb-4 text-sm text-ink-400 leading-relaxed">{a}</p>}
+      {open && <p className="pb-4 md:pb-6 text-sm text-ink-400 leading-relaxed">{t(a)}</p>}
     </div>
   );
 }
 
 export default function FAQSection() {
+  const { t } = useTranslation();
   return (
-    <section className="py-20 px-4 bg-ink-900/40" aria-labelledby="faq-heading">
-      <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-10">
-          <span className="text-xs font-semibold uppercase tracking-widest text-lime-400 block mb-3">FAQ</span>
-          <h2 id="faq-heading" className="font-display text-3xl text-ink-50">Common Questions</h2>
-        </div>
-        <div className="bg-ink-900 border border-ink-700 rounded-2xl px-6">
-          {FAQS.map(({ q, a }) => <FAQItem key={q} q={q} a={a} />)}
+    <section className="py-16 md:py-24 px-4 sm:px-6 lg:px-8 bg-ink-900/40" aria-labelledby="faq-heading">
+      <div className="max-w-7xl mx-auto">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-10">
+            <span className="text-xs font-semibold uppercase tracking-widest text-lime-400 block mb-3">{t('faq.tag')}</span>
+            <h2 id="faq-heading" className="font-display text-3xl md:text-4xl text-ink-50">{t('faq.title')}</h2>
+          </div>
+          <div className="bg-ink-900 border border-ink-700 rounded-2xl px-6 md:px-8">
+            {FAQS.map(({ q, a }) => <FAQItem key={q} q={q} a={a} />)}
+          </div>
         </div>
       </div>
     </section>
