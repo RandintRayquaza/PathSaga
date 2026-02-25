@@ -1,24 +1,16 @@
 import express from 'express';
-import { body } from 'express-validator';
 import firebaseAuth from '../middleware/firebaseAuth.middleware.js';
-import { startAssessment, submitAssessment, getAssessment } from '../controllers/assessment.controller.js';
+import { generateQuestions, submitAnswers, getResults } from '../controllers/assessment.controller.js';
 
 const router = express.Router();
 
-router.post('/start', firebaseAuth, startAssessment);
+// Generate Gemini questions based on user profile
+router.post('/generate-questions', firebaseAuth, generateQuestions);
 
-router.post(
-  '/submit',
-  firebaseAuth,
-  [
-    body('logicalScore').isFloat({ min: 0, max: 100 }).withMessage('logicalScore must be 0–100'),
-    body('creativeScore').isFloat({ min: 0, max: 100 }).withMessage('creativeScore must be 0–100'),
-    body('verbalScore').isFloat({ min: 0, max: 100 }).withMessage('verbalScore must be 0–100'),
-    body('interestTags').isArray().withMessage('interestTags must be an array'),
-  ],
-  submitAssessment
-);
+// Submit answers — triggers analysis + roadmap generation + Firestore save
+router.post('/submit-answers', firebaseAuth, submitAnswers);
 
-router.get('/:userId', firebaseAuth, getAssessment);
+// Get latest assessment results (analysis + roadmap)
+router.get('/results', firebaseAuth, getResults);
 
 export default router;

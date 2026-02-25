@@ -1,8 +1,8 @@
 const colors = {
-  lime:   'bg-lime-400/10 text-lime-400 border-lime-400/20',
+  lime:   'bg-violet-400/10 text-violet-400 border-violet-400/20',
   red:    'bg-red-500/10 text-red-400 border-red-500/20',
   yellow: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-  gray:   'bg-ink-700 text-ink-300 border-ink-600',
+  gray:   'bg-zinc-700 text-zinc-300 border-zinc-600',
   violet: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
 };
 

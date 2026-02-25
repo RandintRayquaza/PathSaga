@@ -4,8 +4,6 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import authRoutes from './routes/auth.routes.js';
 import assessmentRoutes from './routes/assessment.routes.js';
-import careerRoutes from './routes/career.routes.js';
-import roadmapRoutes from './routes/roadmap.routes.js';
 import voiceRoutes from './routes/voice.routes.js';
 import errorHandler from './middleware/errorHandler.middleware.js';
 
@@ -58,8 +56,6 @@ app.get('/health', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/assessment', assessmentRoutes);
-app.use('/api/career', careerRoutes);
-app.use('/api/roadmap', roadmapRoutes);
 app.use('/api/voice', voiceRoutes);
 
 app.use((req, res) => {

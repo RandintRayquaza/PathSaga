@@ -1,26 +1,22 @@
-import Navbar           from '../components/layout/Navbar';
-import Footer           from '../components/layout/Footer';
-import HeroSection      from '../components/sections/HeroSection';
-import MarqueeSection   from '../components/sections/MarqueeSection';
-import ProblemSection   from '../components/sections/ProblemSection';
-import FeaturesSection  from '../components/sections/FeaturesSection';
-import HowItWorksSection from '../components/sections/HowItWorksSection';
+import Navbar             from '../components/layout/Navbar';
+import Footer             from '../components/layout/Footer';
+import HeroSection        from '../components/sections/HeroSection';
+import ProcessSection     from '../components/sections/ProcessSection';
 import WhyPathSagaSection from '../components/sections/WhyPathSagaSection';
-import FAQSection       from '../components/sections/FAQSection';
-import CTASection       from '../components/sections/CTASection';
+import PathAiSection      from '../components/sections/PathAiSection';
+import WhoItsForSection   from '../components/sections/WhoItsForSection';
+import CTASection         from '../components/sections/CTASection';
 
 export default function Home() {
   return (
     <>
       <Navbar />
-      <main>
+      <main className="bg-zinc-950 text-zinc-100 selection:bg-violet-500/30">
         <HeroSection />
-        <MarqueeSection />
-        <ProblemSection />
-        <FeaturesSection />
-        <HowItWorksSection />
         <WhyPathSagaSection />
-        <FAQSection />
+        <ProcessSection />
+        <PathAiSection />
+        <WhoItsForSection />
         <CTASection />
       </main>
       <Footer />

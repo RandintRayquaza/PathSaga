@@ -1,15 +1,9 @@
-/* Shown while lazy-loaded pages suspend */
 export default function PageLoader() {
   return (
-    <div className="min-h-screen bg-ink-950 flex items-center justify-center">
-      <div className="flex gap-1.5">
-        {[0, 1, 2].map((i) => (
-          <span
-            key={i}
-            className="w-2 h-2 rounded-full bg-lime-400 animate-bounce"
-            style={{ animationDelay: `${i * 0.15}s` }}
-          />
-        ))}
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center" role="status">
+      <div className="flex flex-col items-center gap-3">
+        <span className="w-5 h-5 rounded-full border-2 border-zinc-700 border-t-violet-400 animate-spin" />
+        <span className="text-xs text-zinc-500 tracking-widest uppercase">Loading</span>
       </div>
     </div>
   );

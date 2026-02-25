@@ -1,44 +1,40 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import Button from '../ui/Button';
-
+import { useSelector } from 'react-redux';
 export default function CTASection() {
-  const { t } = useTranslation();
+  const isAuth = useSelector((s) => s.auth.isAuthenticated);
+
   return (
-    <section className="py-16 md:py-24 px-4 sm:px-6 lg:px-8" aria-labelledby="cta-heading">
-      <div className="max-w-7xl mx-auto">
-        <div className="max-w-4xl mx-auto text-center bg-ink-900/80 border border-ink-800 rounded-[2.5rem] p-8 md:p-16 lg:p-20 relative overflow-hidden">
-          
-          {/* Subtle background glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-lime-400/5 blur-[100px] rounded-full pointer-events-none" aria-hidden="true" />
-          
-          <div className="relative z-10">
-            {/* Glow ring */}
-            <div className="inline-block mb-6 p-px bg-linear-to-b from-lime-400/30 to-transparent rounded-full">
-              <span className="block text-xs font-semibold uppercase tracking-widest text-lime-400 bg-ink-950 px-4 py-1 rounded-full">
-                {t('cta.tag')}
-              </span>
-            </div>
-
-            <h2 id="cta-heading" className="font-display text-4xl md:text-5xl lg:text-6xl text-ink-50 mb-6">
-              {t('cta.title_1')}<br />{t('cta.title_2')}
-            </h2>
-            <p className="text-ink-400 mb-10 max-w-md mx-auto text-lg">
-              {t('cta.desc')}
-            </p>
-
-            <div className="flex flex-wrap justify-center gap-4">
-              <Link to="/signup">
-                <Button size="lg" className="w-full sm:w-auto">
-                  {t('cta.btn_create')} <ArrowRight className="w-4 h-4" />
-                </Button>
+    <section className="py-32 px-4 sm:px-6 md:px-12 lg:px-24">
+      <div className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
+        <div>
+          <h2 className="font-display text-h2 text-zinc-50 leading-[1.1] mb-2 tracking-tight">
+            Start your path.<br />
+            It takes 4 minutes.
+          </h2>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row items-center gap-4 shrink-0">
+          {isAuth ? (
+            <Link 
+              to="/dashboard" 
+              className="inline-flex items-center justify-center gap-2 bg-violet-500 hover:bg-violet-400 text-white px-8 py-3.5 rounded-full font-semibold transition-colors w-full sm:w-auto"
+            >
+              Go to Dashboard <ArrowRight className="w-4 h-4" />
+            </Link>
+          ) : (
+            <>
+              <Link 
+                to="/signup" 
+                className="inline-flex items-center justify-center gap-2 bg-violet-500 hover:bg-violet-400 text-white px-8 py-3.5 rounded-full font-semibold transition-colors w-full sm:w-auto"
+              >
+                Create free account <ArrowRight className="w-4 h-4" />
               </Link>
-              <Link to="/login">
-                <Button variant="secondary" size="lg" className="w-full sm:w-auto">{t('cta.btn_login')}</Button>
-              </Link>
-            </div>
-          </div>
+              <p className="text-sm text-zinc-500">
+                Already have one? <Link to="/login" className="text-zinc-300 hover:text-zinc-50 transition-colors">Sign in</Link>
+              </p>
+            </>
+          )}
         </div>
       </div>
     </section>

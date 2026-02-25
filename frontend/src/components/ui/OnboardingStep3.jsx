@@ -23,7 +23,7 @@ export default function OnboardingStep3() {
 
   return (
     <div>
-      <p className="text-sm font-medium text-ink-300 mb-4">How would you like to continue?</p>
+      <p className="text-sm font-medium text-zinc-300 mb-4">How would you like to continue?</p>
       <div className="grid gap-4">
         {OPTIONS.map(({ key, icon: Icon, title, desc }) => {
           const active = nextAction === key;
@@ -33,17 +33,17 @@ export default function OnboardingStep3() {
               onClick={() => dispatch(setNextAction(key))}
               className={`w-full text-left p-4 rounded-xl border transition-all ${
                 active
-                  ? 'bg-lime-400/10 border-lime-400 shadow-[0_0_16px_rgba(200,241,53,0.1)]'
-                  : 'bg-ink-800 border-ink-600 hover:border-ink-400'
+                  ? 'bg-violet-400/10 border-violet-400 shadow-[0_0_16px_rgba(200,241,53,0.1)]'
+                  : 'bg-zinc-800 border-zinc-600 hover:border-zinc-400'
               }`}
             >
               <div className="flex items-start gap-4">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-none ${active ? 'bg-lime-400/20' : 'bg-ink-700'}`}>
-                  <Icon className={`w-5 h-5 ${active ? 'text-lime-400' : 'text-ink-400'}`} />
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-none ${active ? 'bg-violet-400/20' : 'bg-zinc-700'}`}>
+                  <Icon className={`w-5 h-5 ${active ? 'text-violet-400' : 'text-zinc-400'}`} />
                 </div>
                 <div>
-                  <p className={`font-semibold text-sm mb-1 ${active ? 'text-lime-400' : 'text-ink-200'}`}>{title}</p>
-                  <p className="text-xs text-ink-400 leading-relaxed">{desc}</p>
+                  <p className={`font-semibold text-sm mb-1 ${active ? 'text-violet-400' : 'text-zinc-200'}`}>{title}</p>
+                  <p className="text-xs text-zinc-400 leading-relaxed">{desc}</p>
                 </div>
               </div>
             </button>

@@ -13,35 +13,35 @@ export default function TasksSection({ tasks = [] }) {
     <Card>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-ink-800 border border-ink-600 flex items-center justify-center">
-            <ClipboardList className="w-4 h-4 text-ink-300" />
+          <div className="w-9 h-9 rounded-xl bg-zinc-800 border border-zinc-600 flex items-center justify-center">
+            <ClipboardList className="w-4 h-4 text-zinc-300" />
           </div>
           <div>
-            <p className="text-xs text-ink-500">{t('dashboard.recommended')}</p>
-            <h2 className="font-semibold text-ink-100">{t('dashboard.actions')}</h2>
+            <p className="text-xs text-zinc-500">{t('dashboard.recommended')}</p>
+            <h2 className="font-semibold text-zinc-100">{t('dashboard.actions')}</h2>
           </div>
         </div>
         {tasks.length > 0 && (
-          <span className="text-xs text-ink-500">{done}/{tasks.length}</span>
+          <span className="text-xs text-zinc-500">{done}/{tasks.length}</span>
         )}
       </div>
 
       {tasks.length === 0 ? (
-        <p className="text-sm text-ink-500 text-center py-6">{t('dashboard.no_tasks')}</p>
+        <p className="text-sm text-zinc-500 text-center py-6">{t('dashboard.no_tasks')}</p>
       ) : (
         <ul className="space-y-1">
           {tasks.map(({ id, label, done }) => (
             <li key={id}>
               <button
                 onClick={() => dispatch(toggleTask(id))}
-                className="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-ink-800 transition-colors text-left group"
+                className="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-zinc-800 transition-colors text-left group"
                 aria-label={`${done ? 'Uncheck' : 'Check'}: ${label}`}
               >
                 {done
-                  ? <CheckSquare className="w-4 h-4 text-lime-400 flex-none mt-0.5" />
-                  : <Square      className="w-4 h-4 text-ink-600 flex-none mt-0.5 group-hover:text-ink-400 transition-colors" />
+                  ? <CheckSquare className="w-4 h-4 text-violet-400 flex-none mt-0.5" />
+                  : <Square      className="w-4 h-4 text-zinc-600 flex-none mt-0.5 group-hover:text-zinc-400 transition-colors" />
                 }
-                <span className={`text-sm leading-snug ${done ? 'text-ink-600 line-through' : 'text-ink-300'}`}>
+                <span className={`text-sm leading-snug ${done ? 'text-zinc-600 line-through' : 'text-zinc-300'}`}>
                   {t(label)}
                 </span>
               </button>

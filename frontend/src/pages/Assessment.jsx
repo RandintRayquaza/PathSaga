@@ -1,106 +1,259 @@
+import { useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
-import { nextStep, prevStep, setAnswer, setResult } from '../redux/slices/assessmentSlice';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { QUESTIONS } from '../utils/assessmentData';
-import StepIndicator from '../components/ui/StepIndicator';
-import Button from '../components/ui/Button';
-import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import {
+  setQuestions, setAnswer, nextStep, prevStep,
+  setStatus, setError, setMissingFields, setResults,
+} from '../redux/slices/assessmentSlice';
+import { setResults as setUserResults } from '../redux/slices/userSlice';
+import api from '../utils/api';
+import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Send, ClipboardList } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function Assessment() {
-  const { t } = useTranslation();
   const dispatch  = useDispatch();
   const navigate  = useNavigate();
-  const { currentStep, answers } = useSelector((s) => s.assessment);
+  const { user }  = useSelector((s) => s.auth);
+  const { questions, currentStep, answers, status, errorMessage, missingFields } = useSelector((s) => s.assessment);
 
-  const q        = QUESTIONS[currentStep];
-  const selected = answers[q?.key];
-  const isLast   = currentStep === QUESTIONS.length - 1;
+  const fetchQuestions = useCallback(async () => {
+    dispatch(setStatus('generating'));
+    try {
+      const res = await api.post('/api/assessment/generate-questions');
+      if (res.data?.success) {
+        const qs = res.data.data?.questions || [];
+        if (qs.length === 0) throw new Error('No questions returned from AI');
+        dispatch(setQuestions(qs));
+        dispatch(setStatus('idle'));
+      }
+    } catch (err) {
+      const missing = err.response?.data?.missingFields || [];
+      const msg = err.response?.data?.message || 'Failed to generate questions. Please try again.';
 
-  const handleNext = () => {
-    if (isLast) {
-      /* Mock result — replace with real AI API response */
-      dispatch(setResult({ career: 'UX Designer', matched: true }));
-      navigate('/dashboard');
-    } else {
-      dispatch(nextStep());
+      if (missing.length > 0) {
+        dispatch(setMissingFields(missing));
+      }
+      
+      toast.error(msg);
+      dispatch(setError(msg));
+    }
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (questions.length === 0 && status === 'idle') {
+      fetchQuestions();
+    }
+  }, [fetchQuestions, questions.length, status]);
+
+  const handleSubmit = async () => {
+    dispatch(setStatus('submitting'));
+    try {
+      const res = await api.post('/api/assessment/submit-answers', { questions, answers });
+      if (res.data?.success) {
+        dispatch(setResults({
+          analysis: res.data.data.analysis,
+          roadmap: {
+            phase1: res.data.data.phase1,
+            phase2: res.data.data.phase2,
+            phase3: res.data.data.phase3,
+            timelineEstimate: res.data.data.timelineEstimate,
+            careerStrategy: res.data.data.careerStrategy,
+            nextSteps: res.data.data.nextSteps,
+          },
+        }));
+        dispatch(setUserResults(res.data.data));
+        navigate('/dashboard');
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Submission failed. Please try again.';
+      toast.error(msg);
+      dispatch(setStatus('idle'));
     }
   };
 
+  const q      = questions[currentStep];
+  const answer = q ? (answers[q.id] || '') : '';
+  const isLast = currentStep === questions.length - 1;
+  const hasAnswer = answer.trim().length > 0;
+
+  // ── Loading state
+  if (status === 'generating') {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center gap-4 px-4">
+        <Loader2 className="w-10 h-10 text-violet-400 animate-spin" />
+        <h2 className="font-display text-xl text-zinc-50 text-center">Path AI is crafting your assessment…</h2>
+        <p className="text-zinc-500 text-sm text-center max-w-sm">
+          Personalised questions based on your profile for <span className="text-violet-400">{user?.targetDomain || 'your domain'}</span>
+        </p>
+      </div>
+    );
+  }
+
+  // ── Submitting state
+  if (status === 'submitting') {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center gap-4 px-4">
+        <Loader2 className="w-10 h-10 text-violet-400 animate-spin" />
+        <h2 className="font-display text-xl text-zinc-50 text-center">Analysing your answers…</h2>
+        <p className="text-zinc-500 text-sm text-center max-w-sm">Path AI is evaluating your responses and generating your personalised roadmap.</p>
+      </div>
+    );
+  }
+
+  // ── Profile-incomplete error (field-specific)
+  if (status === 'error' && missingFields?.length > 0) {
+    const FIELD_DISPLAY = {
+      name: 'Full Name', educationType: 'Education Type', classLevel: 'Class',
+      degree: 'Degree', yearSemester: 'Year / Semester', specialization: 'Specialization',
+      stream: 'Stream', targetDomain: 'Career Domain', customDomain: 'Custom Domain',
+      skillLevel: 'Skill Level',
+    };
+    return (
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center gap-4 px-4">
+        <ClipboardList className="w-10 h-10 text-amber-400" />
+        <h2 className="font-display text-xl text-zinc-50">Complete Your Profile First</h2>
+        <p className="text-zinc-400 text-sm text-center max-w-sm">The following fields need to be filled in before you can take the assessment:</p>
+        <ul className="mt-2 space-y-1">
+          {missingFields.map((f) => (
+            <li key={f} className="text-sm text-amber-300 flex items-center gap-2">
+              <span className="text-amber-500">•</span> {FIELD_DISPLAY[f] || f}
+            </li>
+          ))}
+        </ul>
+        <Link to="/profile/edit"
+          className="mt-4 bg-violet-400 text-zinc-950 font-semibold px-6 py-3 rounded-xl hover:bg-violet-300 transition-colors">
+          Complete Profile
+        </Link>
+      </div>
+    );
+  }
+
+  // ── Generic error state (server errors)
+  if (status === 'error') {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center gap-4 px-4">
+        <AlertCircle className="w-10 h-10 text-red-400" />
+        <h2 className="font-display text-xl text-zinc-50">Something went wrong</h2>
+        <p className="text-zinc-400 text-sm text-center max-w-sm">{errorMessage}</p>
+        <button onClick={fetchQuestions}
+          className="mt-4 bg-violet-400 text-zinc-950 font-semibold px-6 py-3 rounded-xl hover:bg-violet-300 transition-colors">
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  if (!q) return null;
+
+  const difficultyColor = { easy: 'text-violet-400', medium: 'text-amber-400', hard: 'text-red-400' };
+
   return (
-    <div className="min-h-screen bg-ink-950 flex items-center justify-center px-4 py-16">
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4 py-16">
       <div className="w-full max-w-xl">
 
-        {/* Logo */}
+        {/* Header */}
         <div className="text-center mb-10">
-          <span className="font-display text-xl text-ink-50">
-            Path<span className="text-lime-400">Saga</span>
-          </span>
-          <p className="text-sm text-ink-500 mt-1">{t('assessment.title')}</p>
+          <span className="font-display text-xl text-zinc-50">Path<span className="text-violet-400">Saga</span></span>
+          <p className="text-sm text-zinc-500 mt-1">Step 2 — Skills Assessment</p>
         </div>
 
-        {/* Progress */}
-        <div className="flex items-center justify-between mb-6">
-          <StepIndicator current={currentStep} total={QUESTIONS.length} />
-          <span className="text-xs text-ink-500">
-            {t('assessment.step_count', { current: currentStep + 1, total: QUESTIONS.length })}
-          </span>
+        {/* Progress bar */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-zinc-500">Question {currentStep + 1} of {questions.length}</span>
+            <span className={`text-xs font-medium ${difficultyColor[q.difficulty] || 'text-zinc-500'}`}>
+              {q.difficulty} · {q.type}
+            </span>
+          </div>
+          <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-violet-400 rounded-full transition-all duration-300"
+              style={{ width: `${((currentStep + 1) / questions.length) * 100}%` }}
+            />
+          </div>
         </div>
 
-        {/* Question card with AnimatePresence for smooth transitions */}
+        {/* Question Card */}
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="bg-ink-900 border border-ink-700 rounded-2xl p-6 md:p-8"
+            exit={{ opacity: 0, x: -30 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 md:p-8"
           >
-            <h2 className="font-display text-xl md:text-2xl text-ink-50 mb-6 leading-tight">
-              {t(q.question)}
+            <h2 className="font-display text-lg md:text-xl text-zinc-50 mb-6 leading-snug">
+              {q.question}
             </h2>
 
-            <fieldset>
-              <legend className="sr-only">{t(q.question)}</legend>
+            {/* MCQ */}
+            {q.type === 'mcq' && Array.isArray(q.options) && (
               <div className="space-y-3">
-                {q.options.map((opt) => {
-                  const active = selected === opt;
+                {q.options.map((opt, i) => {
+                  const active = answer === opt;
                   return (
-                    <label key={opt} className="flex items-start gap-3 cursor-pointer group">
-                      <input
-                        type="radio"
-                        name={q.key}
-                        value={opt}
-                        checked={active}
-                        onChange={() => dispatch(setAnswer({ key: q.key, value: opt }))}
-                        className="sr-only"
-                      />
-                      <div className={`flex-1 rounded-xl border px-4 py-3.5 text-sm transition-all duration-150 ${
+                    <label key={i} className="flex items-center gap-3 cursor-pointer group">
+                      <input type="radio" name={`q-${q.id}`} value={opt} checked={active}
+                        onChange={() => dispatch(setAnswer({ id: q.id, value: opt }))}
+                        className="sr-only" />
+                      <div className={`flex-1 rounded-xl border px-4 py-3 text-sm transition-all duration-150 ${
                         active
-                          ? 'bg-lime-400/10 border-lime-400 text-lime-300 font-medium shadow-[0_0_12px_rgba(200,241,53,0.08)]'
-                          : 'bg-ink-800 border-ink-600 text-ink-300 group-hover:border-ink-400'
+                          ? 'bg-violet-400/10 border-violet-400 text-violet-300 font-medium'
+                          : 'bg-zinc-800 border-zinc-600 text-zinc-300 group-hover:border-zinc-400'
                       }`}>
-                        {t(opt)}
+                        <span className="text-zinc-600 mr-2">{String.fromCharCode(65 + i)}.</span>
+                        {opt}
                       </div>
                     </label>
                   );
                 })}
               </div>
-            </fieldset>
+            )}
 
-            {/* Nav buttons */}
+            {/* Short-Answer / Scenario */}
+            {(q.type === 'short-answer' || q.type === 'scenario') && (
+              <textarea
+                className="w-full bg-zinc-800 border border-zinc-600 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-violet-400/60 focus:ring-1 focus:ring-violet-400/20 resize-none transition-all"
+                rows={q.type === 'scenario' ? 6 : 4}
+                placeholder={q.type === 'scenario' ? 'Describe your approach in detail…' : 'Type your answer here…'}
+                value={answer}
+                onChange={(e) => dispatch(setAnswer({ id: q.id, value: e.target.value }))}
+              />
+            )}
+
+            {/* Navigation */}
             <div className="flex items-center justify-between mt-8">
-              <Button variant="ghost" size="sm" onClick={() => dispatch(prevStep())} disabled={currentStep === 0}>
-                <ChevronLeft className="w-4 h-4" /> {t('assessment.btn_back')}
-              </Button>
-              <Button onClick={handleNext} disabled={!selected}>
-                {isLast ? <>{t('assessment.btn_results')} <ArrowRight className="w-4 h-4" /></> : <>{t('assessment.btn_next')} <ChevronRight className="w-4 h-4" /></>}
-              </Button>
+              <button
+                onClick={() => dispatch(prevStep())}
+                disabled={currentStep === 0}
+                className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors px-3 py-2"
+              >
+                <ChevronLeft className="w-4 h-4" /> Back
+              </button>
+
+              {isLast ? (
+                <button
+                  onClick={handleSubmit}
+                  disabled={!hasAnswer}
+                  className="flex items-center gap-2 bg-violet-400 text-zinc-950 font-semibold px-6 py-2.5 rounded-xl hover:bg-violet-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm"
+                >
+                  <Send className="w-4 h-4" /> Submit Assessment
+                </button>
+              ) : (
+                <button
+                  onClick={() => dispatch(nextStep())}
+                  disabled={!hasAnswer}
+                  className="flex items-center gap-1.5 bg-violet-400 text-zinc-950 font-semibold px-5 py-2.5 rounded-xl hover:bg-violet-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm"
+                >
+                  Next <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </motion.div>
         </AnimatePresence>
+
       </div>
     </div>
   );

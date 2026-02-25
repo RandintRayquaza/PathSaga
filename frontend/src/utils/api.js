@@ -25,11 +25,16 @@ api.interceptors.request.use(
   }
 );
 
-// Add a response interceptor for basic error logging
+// Add a response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('API Error:', error.response?.data?.message || error.message);
+    if (error.response?.status === 429) {
+      const retryAfter = error.response?.data?.retryAfter || 60;
+      console.warn(`[API] Rate limited. Try again in ${retryAfter}s.`);
+    } else {
+      console.error('API Error:', error.response?.data?.message || error.message);
+    }
     return Promise.reject(error);
   }
 );

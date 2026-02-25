@@ -1,29 +1,19 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-/* Mock data — replace with API responses */
-const MOCK = {
-  careerFit:  null,
-  skillGaps:  [],
-  roadmap:    [],
-  tasks:      [],
-  profile:    null,
-};
-
 const userSlice = createSlice({
   name: 'user',
-  initialState: MOCK,
+  initialState: {
+    results: null,       // Full Firestore roadmap document (includes analysis + roadmap + strategy)
+    loadingResults: false,
+    resultsError: null,
+  },
   reducers: {
-    setCareerFit:  (s, { payload }) => { s.careerFit = payload; },
-    setSkillGaps:  (s, { payload }) => { s.skillGaps = payload; },
-    setRoadmap:    (s, { payload }) => { s.roadmap   = payload; },
-    setTasks:      (s, { payload }) => { s.tasks     = payload; },
-    setProfile:    (s, { payload }) => { s.profile   = payload; },
-    toggleTask:    (s, { payload }) => {
-      const t = s.tasks.find((t) => t.id === payload);
-      if (t) t.done = !t.done;
-    },
+    setResults:       (s, { payload }) => { s.results = payload; s.loadingResults = false; s.resultsError = null; },
+    setLoadingResults:(s, { payload }) => { s.loadingResults = payload; },
+    setResultsError:  (s, { payload }) => { s.resultsError = payload; s.loadingResults = false; },
+    clearResults:     (s) => { s.results = null; s.resultsError = null; },
   },
 });
 
-export const { setCareerFit, setSkillGaps, setRoadmap, setTasks, setProfile, toggleTask } = userSlice.actions;
+export const { setResults, setLoadingResults, setResultsError, clearResults } = userSlice.actions;
 export default userSlice.reducer;

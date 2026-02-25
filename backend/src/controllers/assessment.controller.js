@@ -1,94 +1,133 @@
-import { validationResult } from 'express-validator';
 import { db } from '../config/firebase.js';
-import assessmentSchema from '../models/assessment.schema.js';
+import llmService from '../services/llmService.js';
+import roadmapSchema from '../models/roadmap.schema.js';
+import { getMissingFields } from './auth.controller.js';
 
-const ASSESSMENTS = 'assessments';
 const USERS = 'users';
+const ROADMAPS = 'roadmaps';
 
-export const startAssessment = async (req, res, next) => {
+// POST /api/assessment/generate-questions
+export const generateQuestions = async (req, res, next) => {
   try {
     const uid = req.firebaseUser.uid;
 
     const userSnap = await db.collection(USERS).doc(uid).get();
     if (!userSnap.exists) {
-      return res.status(404).json({ success: false, message: 'User not found. Please register first.', data: null });
+      return res.status(404).json({ success: false, message: 'User not found. Please complete your profile first.', data: null });
     }
 
-    const existing = await db.collection(ASSESSMENTS).where('userId', '==', uid).limit(1).get();
-    if (!existing.empty) {
-      const doc = existing.docs[0];
-      return res.status(200).json({
-        success: true,
-        message: 'Assessment already in progress',
-        data: { id: doc.id, ...doc.data() },
+    const profile = userSnap.data();
+    const missingFields = getMissingFields(profile);
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please complete these profile fields before taking the assessment.',
+        missingFields,
+        data: null,
       });
     }
 
-    const doc = assessmentSchema({ userId: uid });
-    const saved = await db.collection(ASSESSMENTS).add(doc);
+    console.log(`[Assessment] Generating questions for ${uid} — domain: ${profile.targetDomain}, level: ${profile.skillLevel}`);
+    const result = await llmService.generateAssessmentQuestions(profile);
 
-    return res.status(201).json({ success: true, message: 'Assessment started', data: { id: saved.id, ...doc } });
+    return res.status(200).json({
+      success: true,
+      message: 'Questions generated successfully',
+      data: result,
+    });
   } catch (err) {
     next(err);
   }
 };
 
-export const submitAssessment = async (req, res, next) => {
+// POST /api/assessment/submit-answers
+export const submitAnswers = async (req, res, next) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ success: false, message: errors.array()[0].msg, data: null });
-    }
-
     const uid = req.firebaseUser.uid;
-    const { logicalScore, creativeScore, verbalScore, interestTags } = req.body;
+    const { questions, answers } = req.body;
 
-    const snap = await db.collection(ASSESSMENTS).where('userId', '==', uid).limit(1).get();
-
-    let assessmentRef;
-    if (snap.empty) {
-      const doc = assessmentSchema({ userId: uid });
-      assessmentRef = await db.collection(ASSESSMENTS).add(doc);
-    } else {
-      assessmentRef = snap.docs[0].ref;
+    if (!questions || !Array.isArray(questions) || questions.length === 0) {
+      return res.status(400).json({ success: false, message: 'questions array is required', data: null });
+    }
+    if (!answers || typeof answers !== 'object') {
+      return res.status(400).json({ success: false, message: 'answers object is required', data: null });
     }
 
-    await assessmentRef.update({
-      logicalScore,
-      creativeScore,
-      verbalScore,
-      interestTags: interestTags || [],
-      completedAt: new Date().toISOString(),
+    const userSnap = await db.collection(USERS).doc(uid).get();
+    if (!userSnap.exists) {
+      return res.status(404).json({ success: false, message: 'User not found.', data: null });
+    }
+
+    const profile = userSnap.data();
+
+    console.log(`[Assessment] Analyzing answers for ${uid}…`);
+    const analysisResult = await llmService.analyzeAssessmentAnswers({ profile, questions, answers });
+
+    console.log(`[Assessment] Generating roadmap for ${uid}…`);
+    const roadmapResult = await llmService.generateFullRoadmap({
+      profile,
+      analysis: analysisResult.analysis,
+    });
+
+    // Delete any old roadmap for this user before saving new one
+    const oldSnap = await db.collection(ROADMAPS).where('userId', '==', uid).get();
+    const deleteOps = oldSnap.docs.map((d) => d.ref.delete());
+    await Promise.all(deleteOps);
+
+    // Store combined result in Firestore
+    const doc = roadmapSchema({
+      userId: uid,
+      analysis: analysisResult.analysis,
+      recommendedRoles: analysisResult.recommendedRoles,
+      levelAssessment: analysisResult.levelAssessment,
+      confidenceSummary: analysisResult.confidenceSummary,
+      phase1: roadmapResult.roadmap?.phase1 || [],
+      phase2: roadmapResult.roadmap?.phase2 || [],
+      phase3: roadmapResult.roadmap?.phase3 || [],
+      timelineEstimate: roadmapResult.timelineEstimate || null,
+      careerStrategy: roadmapResult.careerStrategy || {},
+      nextSteps: roadmapResult.nextSteps || [],
+    });
+
+    const saved = await db.collection(ROADMAPS).add(doc);
+
+    // Mark user as having completed assessment
+    await db.collection(USERS).doc(uid).update({
+      assessmentComplete: true,
       updatedAt: new Date().toISOString(),
     });
 
-    const updated = await assessmentRef.get();
+    console.log(`[Assessment] Complete for ${uid} — roadmap saved: ${saved.id}`);
+
     return res.status(200).json({
       success: true,
-      message: 'Assessment submitted successfully',
-      data: { id: updated.id, ...updated.data() },
+      message: 'Assessment submitted and roadmap generated',
+      data: { id: saved.id, ...doc },
     });
   } catch (err) {
     next(err);
   }
 };
 
-export const getAssessment = async (req, res, next) => {
+// GET /api/assessment/results
+export const getResults = async (req, res, next) => {
   try {
-    const requestedUid = req.params.userId;
-    const callerUid = req.firebaseUser.uid;
+    const uid = req.firebaseUser.uid;
 
-    if (requestedUid !== callerUid) {
-      return res.status(403).json({ success: false, message: 'Not authorized to view this assessment', data: null });
-    }
+    const snap = await db
+      .collection(ROADMAPS)
+      .where('userId', '==', uid)
+      .orderBy('createdAt', 'desc')
+      .limit(1)
+      .get();
 
-    const snap = await db.collection(ASSESSMENTS).where('userId', '==', requestedUid).limit(1).get();
     if (snap.empty) {
-      return res.status(404).json({ success: false, message: 'No assessment found for this user', data: null });
+      return res.status(404).json({ success: false, message: 'No assessment results found. Please take the assessment first.', data: null });
     }
 
     const doc = snap.docs[0];
-    return res.status(200).json({ success: true, message: 'Assessment retrieved', data: { id: doc.id, ...doc.data() } });
+    return res.status(200).json({ success: true, message: 'Results retrieved', data: { id: doc.id, ...doc.data() } });
   } catch (err) {
     next(err);
   }

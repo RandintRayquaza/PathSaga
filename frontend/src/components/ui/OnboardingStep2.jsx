@@ -18,8 +18,8 @@ export default function OnboardingStep2() {
 
   return (
     <div>
-      <p className="text-sm font-medium text-ink-300 mb-4">
-        What topics genuinely excite you? <span className="text-ink-500 font-normal">(select all that apply)</span>
+      <p className="text-sm font-medium text-zinc-300 mb-4">
+        What topics genuinely excite you? <span className="text-zinc-500 font-normal">(select all that apply)</span>
       </p>
       <div className="flex flex-wrap gap-2">
         {INTERESTS.map((interest) => {
@@ -30,8 +30,8 @@ export default function OnboardingStep2() {
               onClick={() => dispatch(toggleInterest(interest))}
               className={`px-3 py-1.5 text-sm rounded-full border transition-all duration-150 ${
                 active
-                  ? 'bg-lime-400 text-ink-950 border-lime-400 font-semibold'
-                  : 'bg-ink-800 text-ink-300 border-ink-600 hover:border-lime-400/50'
+                  ? 'bg-violet-400 text-zinc-950 border-violet-400 font-semibold'
+                  : 'bg-zinc-800 text-zinc-300 border-zinc-600 hover:border-violet-400/50'
               }`}
             >
               {interest}
@@ -40,7 +40,7 @@ export default function OnboardingStep2() {
         })}
       </div>
       {interests.length > 0 && (
-        <p className="mt-4 text-xs text-ink-500">{interests.length} selected</p>
+        <p className="mt-4 text-xs text-zinc-500">{interests.length} selected</p>
       )}
     </div>
   );

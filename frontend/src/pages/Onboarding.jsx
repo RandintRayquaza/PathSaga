@@ -43,31 +43,31 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-ink-950 flex items-center justify-center px-4 py-16">
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4 py-16">
       <div className="w-full max-w-lg">
 
         {/* Logo */}
         <div className="text-center mb-10">
-          <span className="font-display text-xl text-ink-50">
-            Path<span className="text-lime-400">Saga</span>
+          <span className="font-display text-xl text-zinc-50">
+            Path<span className="text-violet-400">Saga</span>
           </span>
         </div>
 
         {/* Card */}
-        <div className="bg-ink-900 border border-ink-700 rounded-2xl p-6 md:p-8">
+        <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 md:p-8">
 
           {/* Step indicator + counter */}
           <div className="flex items-center justify-between mb-6">
             <StepIndicator current={step} total={STEP_META.length} />
-            <span className="text-xs text-ink-500">
+            <span className="text-xs text-zinc-500">
               {t('onboarding.step_counter', { current: step + 1, total: STEP_META.length })}
             </span>
           </div>
 
           {/* Heading */}
           <div className="mb-6">
-            <h1 className="font-display text-2xl text-ink-50 mb-1">{t(meta.title)}</h1>
-            <p className="text-sm text-ink-400">{t(meta.subtitle)}</p>
+            <h1 className="font-display text-2xl text-zinc-50 mb-1">{t(meta.title)}</h1>
+            <p className="text-sm text-zinc-400">{t(meta.subtitle)}</p>
           </div>
 
           {/* Step content */}

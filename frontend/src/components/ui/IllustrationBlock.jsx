@@ -17,14 +17,14 @@ export default function IllustrationBlock({ className = '', label = '' }) {
 
   return (
     <div
-      className={`relative rounded-3xl bg-neutral-900 border border-neutral-800 overflow-hidden flex items-center justify-center group ${className}`}
+      className={`relative rounded-3xl bg-zinc-900 border border-zinc-800 overflow-hidden flex items-center justify-center group ${className}`}
       aria-label={label}
       aria-hidden={!label}
     >
       <img
         src={imageToUse.url}
         alt={label}
-        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+        className="w-full h-full object-cover bg-center transition-transform duration-700 ease-out group-hover:scale-105"
       />
     </div>
   );

@@ -18,8 +18,8 @@ function ChipSelect({ options, selected, onSelect, multi = false }) {
             onClick={() => onSelect(opt)}
             className={`px-3 py-1.5 text-sm rounded-full border transition-all duration-150 ${
               active
-                ? 'bg-lime-400 text-ink-950 border-lime-400 font-semibold'
-                : 'bg-ink-800 text-ink-300 border-ink-600 hover:border-lime-400/50'
+                ? 'bg-violet-400 text-zinc-950 border-violet-400 font-semibold'
+                : 'bg-zinc-800 text-zinc-300 border-zinc-600 hover:border-violet-400/50'
             }`}
           >
             {opt}
@@ -39,7 +39,7 @@ export default function OnboardingStep1() {
 
       {/* Education type */}
       <div>
-        <p className="text-sm font-medium text-ink-300 mb-3">Are you currently in school or college?</p>
+        <p className="text-sm font-medium text-zinc-300 mb-3">Are you currently in school or college?</p>
         <div className="grid grid-cols-2 gap-3">
           {['school', 'college'].map((type) => (
             <button
@@ -47,8 +47,8 @@ export default function OnboardingStep1() {
               onClick={() => dispatch(setEducationType(type))}
               className={`py-4 rounded-xl border text-sm font-medium capitalize transition-all ${
                 educationType === type
-                  ? 'bg-lime-400 text-ink-950 border-lime-400'
-                  : 'bg-ink-800 border-ink-600 text-ink-300 hover:border-lime-400/50'
+                  ? 'bg-violet-400 text-zinc-950 border-violet-400'
+                  : 'bg-zinc-800 border-zinc-600 text-zinc-300 hover:border-violet-400/50'
               }`}
             >
               {type}
@@ -61,11 +61,11 @@ export default function OnboardingStep1() {
       {educationType === 'school' && (
         <>
           <div>
-            <p className="text-sm font-medium text-ink-300 mb-3">Which class are you in?</p>
+            <p className="text-sm font-medium text-zinc-300 mb-3">Which class are you in?</p>
             <ChipSelect options={SCHOOL_CLASSES} selected={classLevel} onSelect={(v) => dispatch(setField({ key: 'classLevel', value: v }))} />
           </div>
           <div>
-            <p className="text-sm font-medium text-ink-300 mb-3">Select your subjects <span className="text-ink-500 font-normal">(pick all that apply)</span></p>
+            <p className="text-sm font-medium text-zinc-300 mb-3">Select your subjects <span className="text-zinc-500 font-normal">(pick all that apply)</span></p>
             <ChipSelect options={SCHOOL_SUBJECTS} selected={subjects} onSelect={(v) => dispatch(toggleSubject(v))} multi />
           </div>
         </>
@@ -75,11 +75,11 @@ export default function OnboardingStep1() {
       {educationType === 'college' && (
         <>
           <div>
-            <p className="text-sm font-medium text-ink-300 mb-3">Which year / semester are you in?</p>
+            <p className="text-sm font-medium text-zinc-300 mb-3">Which year / semester are you in?</p>
             <ChipSelect options={COLLEGE_YEARS} selected={yearSemester} onSelect={(v) => dispatch(setField({ key: 'yearSemester', value: v }))} />
           </div>
           <div>
-            <p className="text-sm font-medium text-ink-300 mb-3">What is your branch or field?</p>
+            <p className="text-sm font-medium text-zinc-300 mb-3">What is your branch or field?</p>
             <ChipSelect options={COLLEGE_BRANCHES} selected={branch} onSelect={(v) => dispatch(setField({ key: 'branch', value: v }))} />
           </div>
         </>

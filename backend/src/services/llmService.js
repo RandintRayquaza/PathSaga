@@ -1,165 +1,321 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const provider = process.env.LLM_PROVIDER || 'gemini';
 const USE_MOCK = process.env.USE_MOCK_LLM === 'true';
 
-const getGeminiClient = () => {
+const getModel = (systemInstruction = null) => {
   if (!process.env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY is not set');
-  return new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  return genAI.getGenerativeModel({
+    model: 'gemini-2.5-flash',
+    ...(systemInstruction && { systemInstruction }),
+  });
 };
 
+// ─── Retry / Rate-limit helper ───────────────────────────────────────────────
 
+const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
-const mockCareerRecommendation = ({ assessmentScores }) => ({
-  recommendedCareers: ['UX Designer', 'Product Manager', 'Frontend Developer'],
-  fitPercentage: Math.round(
-    ((assessmentScores.logicalScore + assessmentScores.creativeScore + assessmentScores.verbalScore) / 3)
-  ),
-  missingSkills: ['User Research', 'SQL', 'System Design'],
-  explanation:
-    'Based on your strong creative and logical scores, careers in design and product development align well with your profile. Your interest in technology and entrepreneurship further reinforce this direction.',
-  roadmap: {
-    phase1: ['Learn HTML, CSS & JavaScript basics', 'Complete UI/UX design course', 'Build 2 portfolio projects'],
-    phase2: ['Learn React or Vue', 'Study product management frameworks', 'Contribute to open source'],
-    phase3: ['Apply for internships', 'Build a SaaS side project', 'Prepare for job interviews'],
-  },
-  source: 'mock',
-});
+const withRetry = async (fn, { maxAttempts = 3, label = 'LLM' } = {}) => {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const isRate =
+        err.message?.includes('429') ||
+        err.message?.includes('quota') ||
+        err.message?.includes('RESOURCE_EXHAUSTED') ||
+        err.status === 429;
 
-const mockRoadmap = ({ careerGoal }) => ({
-  phase1: [
-    `Research the ${careerGoal} field thoroughly`,
-    'Identify top online courses and certifications',
-    'Set up your learning environment and tools',
-    'Join relevant communities and Discord servers',
-  ],
-  phase2: [
-    'Complete your first major project',
-    'Build a portfolio website',
-    'Start networking with professionals on LinkedIn',
-    'Apply for internships or freelance gigs',
-  ],
-  phase3: [
-    'Land your first job or client',
-    'Contribute to open-source or industry projects',
-    'Pursue advanced certifications',
-    'Mentor others and build your personal brand',
-  ],
-  source: 'mock',
-});
+      if (isRate && attempt < maxAttempts) {
+        // Exponential backoff with jitter: ~4s, then ~9s
+        const baseWait = Math.pow(2, attempt) * 2000;
+        const jitter = Math.random() * 1000;
+        const waitMs = baseWait + jitter;
+        
+        console.warn(`[${label}] Rate limited (attempt ${attempt}/${maxAttempts}). Retrying in ${(waitMs / 1000).toFixed(1)}s…`);
+        await delay(waitMs);
+        continue;
+      }
 
-const mockVoiceResponse = ({ speechText }) =>
-  `Great question! Based on what you said — "${speechText.slice(0, 60)}..." — I'd recommend exploring careers in technology and design. Focus on building practical skills through hands-on projects and internships. Your curiosity is your biggest asset on this journey!`;
-
-// ─── Helper: call Gemini or fall back to mock on 429 ───
-
-const callGeminiOrMock = async (prompt, mockFn, args) => {
-  if (USE_MOCK) {
-    console.log('[LLM] USE_MOCK_LLM=true — returning mock response');
-    return mockFn(args);
-  }
-
-  if (provider !== 'gemini') throw new Error(`Unsupported LLM provider: ${provider}`);
-
-  try {
-    const genAI = getGeminiClient();
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-    const result = await model.generateContent(prompt);
-    return result.response.text().trim();
-  } catch (err) {
-    if (err.message?.includes('429') || err.message?.includes('quota') || err.message?.includes('RESOURCE_EXHAUSTED')) {
-      console.warn('[LLM] Gemini quota exceeded — using mock fallback');
-      return mockFn(args);
+      if (isRate) {
+        const rateErr = new Error('AI is currently experiencing high demand. Please try again in a few moments.');
+        rateErr.statusCode = 429;
+        throw rateErr;
+      }
+      throw err;
     }
-    throw err;
   }
 };
 
-// ─── Service ───
+// ─── JSON parse helper ────────────────────────────────────────────────────────
 
-const llmService = {
-  generateCareerRecommendation: async ({ userProfile, assessmentScores, pythonResult }) => {
-    const prompt = `
-You are PathSaga AI, a career guidance assistant for first-generation learners in India.
+const extractJSON = (text) => {
+  // Strip markdown code fences if Gemini wraps the JSON
+  const clean = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+  try {
+    return JSON.parse(clean);
+  } catch {
+    const match = clean.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('Gemini returned non-JSON response');
+    return JSON.parse(match[0]);
+  }
+};
+
+// ─── 1. Generate Assessment Questions ────────────────────────────────────────
+
+const generateAssessmentQuestions = async (profile) => {
+  if (USE_MOCK) {
+    return {
+      questions: [
+        { id: 1, question: 'What does HTML stand for?', type: 'mcq', difficulty: 'easy', options: ['HyperText Markup Language', 'HyperTool Markup Logic', 'HighText Machine Language', 'None of these'] },
+        { id: 2, question: 'Explain the difference between == and === in JavaScript.', type: 'short-answer', difficulty: 'medium' },
+      ],
+    };
+  }
+
+  const prompt = `
+You are an expert technical assessor for ${profile.targetDomain || 'software development'}.
 
 Student profile:
-- Name: ${userProfile.name || 'Student'}
-- Class: ${userProfile.class || 'N/A'}
-- Stream: ${userProfile.stream || 'N/A'}
-- Language: ${userProfile.language || 'en'}
-- Interest tags: ${assessmentScores.interestTags?.join(', ') || 'N/A'}
+- Education: ${profile.educationType === 'school' ? `Class ${profile.classLevel}` : `${profile.degree}, ${profile.yearSemester}`}
+- Stream: ${profile.stream || 'N/A'}
+- Target domain: ${profile.targetDomain}
+- Skill level: ${profile.skillLevel}
+- Interests: ${profile.interests?.join(', ') || 'N/A'}
+- Custom instructions: ${profile.customInstructions || 'None'}
 
-Assessment scores (0–100):
-- Logical: ${assessmentScores.logicalScore}
-- Creative: ${assessmentScores.creativeScore}
-- Verbal: ${assessmentScores.verbalScore}
+Generate exactly 10 assessment questions.
 
-Python engine fit score: ${pythonResult?.fitScore || 'N/A'}
-Python recommended domains: ${pythonResult?.domains?.join(', ') || 'N/A'}
+Rules:
+- Beginner → fundamentals and concepts only
+- Intermediate → applied, practical, scenario-based
+- Advanced → architecture, optimization, trade-offs, system design
+- Questions MUST be specific to "${profile.targetDomain}" — no generic career questions
+- MCQ must have exactly 4 options, one correct
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON, no explanation:
 {
-  "recommendedCareers": ["Career 1", "Career 2", "Career 3"],
-  "fitPercentage": 82,
-  "missingSkills": ["Skill A", "Skill B"],
-  "explanation": "2–3 sentence explanation of why these careers fit.",
-  "roadmap": {
-    "phase1": ["Step 1", "Step 2", "Step 3"],
-    "phase2": ["Step 4", "Step 5", "Step 6"],
-    "phase3": ["Step 7", "Step 8", "Step 9"]
-  }
+  "questions": [
+    {
+      "id": 1,
+      "question": "...",
+      "type": "mcq",
+      "difficulty": "easy",
+      "options": ["A", "B", "C", "D"]
+    },
+    {
+      "id": 2,
+      "question": "...",
+      "type": "short-answer",
+      "difficulty": "medium"
+    }
+  ]
 }
 `.trim();
 
-    const result = await callGeminiOrMock(prompt, mockCareerRecommendation, { userProfile, assessmentScores });
+  return withRetry(async () => {
+    const model = getModel();
+    const result = await model.generateContent(prompt);
+    return extractJSON(result.response.text());
+  });
+};
 
-    // If mock was returned, it's already an object
-    if (typeof result === 'object') return result;
+// ─── 2. Analyze Assessment Answers ───────────────────────────────────────────
 
-    const jsonMatch = result.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('Gemini returned non-JSON response');
-    return JSON.parse(jsonMatch[0]);
-  },
+const analyzeAssessmentAnswers = async ({ profile, questions, answers }) => {
+  if (USE_MOCK) {
+    return {
+      analysis: {
+        strengths: ['Basic understanding of fundamentals'],
+        weaknesses: ['Lacks practical project experience'],
+        skillGaps: ['No hands-on with real tools'],
+      },
+      recommendedRoles: ['Junior Developer', 'Intern'],
+      levelAssessment: 'Beginner — solid foundation, needs guided practice',
+      confidenceSummary: 'You show potential but need structured project work.',
+    };
+  }
 
-  generateRoadmap: async ({ userProfile, careerGoal }) => {
-    const prompt = `
-You are PathSaga AI. Generate a 3-phase learning roadmap for:
-- Career goal: ${careerGoal}
-- Student class: ${userProfile.class || 'N/A'}
-- Stream: ${userProfile.stream || 'N/A'}
+  const qaFormatted = questions.map((q) => {
+    const answer = answers[q.id] || answers[String(q.id)] || 'Not answered';
+    return `Q${q.id} [${q.type}, ${q.difficulty}]: ${q.question}\nAnswer: ${answer}`;
+  }).join('\n\n');
+
+  const prompt = `
+You are a senior career evaluator assessing a student for "${profile.targetDomain}".
+
+Student profile:
+- Skill level claimed: ${profile.skillLevel}
+- Education: ${profile.educationType === 'school' ? `Class ${profile.classLevel}` : `${profile.degree}, ${profile.yearSemester}`}
+- Stream: ${profile.stream || 'N/A'}
+- Interests: ${profile.interests?.join(', ') || 'N/A'}
+- Custom goals: ${profile.customInstructions || 'None'}
+
+Questions and Answers:
+${qaFormatted}
+
+Evaluate thoroughly. Be honest and specific — no generic feedback.
 
 Return ONLY valid JSON:
 {
-  "phase1": ["Step 1", "Step 2", "Step 3", "Step 4"],
-  "phase2": ["Step 5", "Step 6", "Step 7", "Step 8"],
-  "phase3": ["Step 9", "Step 10", "Step 11", "Step 12"]
+  "analysis": {
+    "strengths": ["specific strength 1", "specific strength 2"],
+    "weaknesses": ["specific weakness 1", "specific weakness 2"],
+    "skillGaps": ["gap 1", "gap 2", "gap 3"]
+  },
+  "recommendedRoles": ["Role 1", "Role 2", "Role 3"],
+  "levelAssessment": "One sentence honest assessment of their true current level",
+  "confidenceSummary": "2-3 sentences: where they are, what's holding them back, what they should do next"
 }
 `.trim();
 
-    const result = await callGeminiOrMock(prompt, mockRoadmap, { userProfile, careerGoal });
+  return withRetry(async () => {
+    const model = getModel();
+    const result = await model.generateContent(prompt);
+    return extractJSON(result.response.text());
+  });
+};
 
-    if (typeof result === 'object') return result;
+// ─── 3. Generate Full Personalized Roadmap ───────────────────────────────────
 
-    const jsonMatch = result.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('Gemini returned non-JSON response');
-    return JSON.parse(jsonMatch[0]);
+const generateFullRoadmap = async ({ profile, analysis }) => {
+  if (USE_MOCK) {
+    return {
+      roadmap: {
+        phase1: ['Learn core fundamentals of your domain', 'Complete one beginner project'],
+        phase2: ['Build 2 real-world projects', 'Learn industry tools'],
+        phase3: ['Build portfolio', 'Apply for internships'],
+      },
+      timelineEstimate: '6–9 months at 2 hrs/day',
+      careerStrategy: {
+        internship: 'Apply after Phase 2 completion',
+        freelancing: null,
+        higherStudies: 'Consider after 1 year of experience',
+        govtExam: null,
+      },
+      nextSteps: ['Start with Phase 1 today', 'Join an online community'],
+    };
+  }
+
+  const studyCtx = profile.studyHoursPerDay
+    ? `${profile.studyHoursPerDay} hours per day`
+    : 'unspecified hours per day';
+
+  const prompt = `
+You are a senior career architect creating a personalized roadmap for a student.
+
+Student profile:
+- Name: ${profile.name || 'Student'}
+- Education: ${profile.educationType === 'school' ? `School, Class ${profile.classLevel}` : `${profile.degree}, ${profile.yearSemester}`}
+- Stream: ${profile.stream}
+- Target domain: ${profile.targetDomain}
+- Skill level: ${profile.skillLevel}
+- Interests: ${profile.interests?.join(', ') || 'N/A'}
+- Study time: ${studyCtx}
+- Custom goals/constraints: ${profile.customInstructions || 'None'}
+- Language preference: ${profile.languagePreference === 'hi' ? 'Hindi' : 'English'}
+
+Assessment results:
+- Strengths: ${analysis.strengths?.join(', ')}
+- Weaknesses: ${analysis.weaknesses?.join(', ')}
+- Skill gaps: ${analysis.skillGaps?.join(', ')}
+- True level: ${analysis.levelAssessment}
+- Recommended roles: ${analysis.recommendedRoles?.join(', ')}
+
+Create a SPECIFIC, ACTIONABLE roadmap. Name real tools, real courses, real platforms.
+Base the timeline on ${studyCtx}.
+Consider the custom goals — if user mentioned freelancing, include that strategy. If govt job, include that.
+
+Return ONLY valid JSON:
+{
+  "roadmap": {
+    "phase1": [
+      "Step with specific tool/course/resource",
+      "Step with specific action",
+      "Step with specific project to build"
+    ],
+    "phase2": [
+      "Step ...",
+      "Step ...",
+      "Step ..."
+    ],
+    "phase3": [
+      "Step ...",
+      "Step ...",
+      "Step ..."
+    ]
   },
-
-  processVoiceQuery: async ({ speechText, userProfile }) => {
-    const prompt = `
-You are PathSaga AI, a friendly career advisor. A student said:
-"${speechText}"
-
-Student context: Class ${userProfile.class || 'N/A'}, Stream ${userProfile.stream || 'N/A'}.
-
-Give a concise, helpful 2–3 sentence career guidance response.
+  "timelineEstimate": "X months at Y hours/day",
+  "careerStrategy": {
+    "internship": "...",
+    "freelancing": "..." or null,
+    "higherStudies": "..." or null,
+    "govtExam": "..." or null,
+    "portfolio": "..."
+  },
+  "nextSteps": [
+    "Most important first action",
+    "Second action",
+    "Third action"
+  ]
+}
 `.trim();
 
-    const result = await callGeminiOrMock(prompt, mockVoiceResponse, { speechText, userProfile });
+  return withRetry(async () => {
+    const model = getModel();
+    const result = await model.generateContent(prompt);
+    return extractJSON(result.response.text());
+  });
+};
 
-    if (typeof result === 'object') return result; // mock
-    return result; // real gemini string response
-  },
+// ─── 4. Context-Aware Chat ────────────────────────────────────────────────────
+
+const processChat = async ({ message, userProfile, analysis, roadmap, history = [] }) => {
+  if (USE_MOCK) return `Based on your profile, I'd recommend focusing on ${userProfile.targetDomain || 'your domain'} fundamentals first. Keep going!`;
+
+  const systemInstruction = `
+You are PathSaga AI, a career advisor for ${userProfile.name || 'this student'}.
+
+Student context:
+- Domain: ${userProfile.targetDomain}
+- Level: ${userProfile.skillLevel}
+- Education: ${userProfile.educationType === 'school' ? `Class ${userProfile.classLevel}` : `${userProfile.degree}, ${userProfile.yearSemester}`}
+- Goals: ${userProfile.customInstructions || 'None specified'}
+
+Their assessment: ${analysis?.levelAssessment || 'Not yet assessed'}
+Their strengths: ${analysis?.strengths?.join(', ') || 'Unknown'}
+Their gaps: ${analysis?.skillGaps?.join(', ') || 'Unknown'}
+Recommended roles: ${analysis?.recommendedRoles?.join(', ') || 'Unknown'}
+Current roadmap phase 1: ${roadmap?.phase1?.slice(0, 2).join(', ') || 'Not generated yet'}
+
+Rules:
+- Be concise and specific — max 150 words per reply
+- Reference their actual profile, domain, gaps, and roadmap
+- No generic motivational responses
+- Answer the question directly first, then add context
+- Use simple language (student is ${userProfile.languagePreference === 'hi' ? 'Hindi-speaking' : 'English-speaking'})
+`.trim();
+
+  const geminiHistory = history.map((msg) => ({
+    role: msg.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: msg.content }],
+  }));
+
+  return withRetry(async () => {
+    const model = getModel(systemInstruction);
+    const chat = model.startChat({ history: geminiHistory });
+    const result = await chat.sendMessage(message);
+    return result.response.text().trim();
+  });
+};
+
+// ─── Exports ──────────────────────────────────────────────────────────────────
+
+const llmService = {
+  generateAssessmentQuestions,
+  analyzeAssessmentAnswers,
+  generateFullRoadmap,
+  processChat,
 };
 
 export default llmService;

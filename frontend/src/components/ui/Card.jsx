@@ -1,11 +1,7 @@
-export default function Card({ children, className = '', glow = false }) {
+export default function Card({ children, className = '', as: Tag = 'div' }) {
   return (
-    <div className={`
-      bg-ink-900 border border-ink-700 rounded-2xl p-5
-      ${glow ? 'shadow-[0_0_24px_rgba(200,241,53,0.06)]' : ''}
-      ${className}
-    `}>
+    <Tag className={`bg-zinc-900 border border-zinc-800 rounded-lg p-4 md:p-5 ${className}`}>
       {children}
-    </div>
+    </Tag>
   );
 }

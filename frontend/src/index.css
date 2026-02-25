@@ -1,101 +1,75 @@
 @import "tailwindcss";
+@config "../tailwind.config.js";
 
-/* @theme {
-  /* ── Color Palette ── */
-  --color-ink-950:   #0a0a0f;
-  --color-ink-900:   #12121a;
-  --color-ink-800:   #1c1c28;
-  --color-ink-700:   #2a2a3d;
-  --color-ink-600:   #3d3d58;
-  --color-ink-400:   #6e6e94;
-  --color-ink-300:   #9999b8;
-  --color-ink-200:   #c4c4d8;
-  --color-ink-100:   #eeeef5;
-  --color-ink-50:    #f7f7fb; */
- */
-
-
-/* ── Base ── */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html {
-  scroll-behavior: smooth;
-  -webkit-font-smoothing: antialiased;
-}
-
-body {
-  font-family: var(--font-body);
-  background: #0a0a0f;
-  color: #eeeef5;
-  line-height: 1.65;
-}
-
+/* ── Heading font ──────────────────────────────────────── */
 h1,
 h2,
 h3,
-h4 {
-  font-family: var(--font-display);
-  line-height: 1.15;
+h4,
+h5 {
+  font-family: "Outfit", system-ui, sans-serif;
 }
 
-/* ── Marquee ── */
-@keyframes marquee {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
+/* ── Scrollbar — slim, unobtrusive ────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 9999px;
+} /* zinc-800 */
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+} /* zinc-700 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #27272a transparent;
 }
 
-.marquee-track {
-  display: flex;
-  width: max-content;
-  animation: marquee 28s linear infinite;
-  will-change: transform;
+/* ── Dark selects ──────────────────────────────────────── */
+select {
+  color-scheme: dark;
+  background: #18181b;
+  color: #e4e4e7;
+  border-color: #27272a;
+} /* zinc-900 / 200 / 800 */
+select option {
+  background: #18181b;
+  color: #e4e4e7;
+}
+select option:checked {
+  background: #27272a;
+  color: #8b5cf6;
+} /* violet-500 */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  filter: invert(1) brightness(0.5);
 }
 
-.marquee-track:hover {
-  animation-play-state: paused;
-}
-
-/* ── Fade-up scroll reveal ── */
-.reveal {
-  opacity: 0;
-  transform: translateY(20px);
-  transition:
-    opacity 0.55s ease,
-    transform 0.55s ease;
-}
-.reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* ── Noise grain overlay (subtle) ── */
+/* ── Noise texture (barely visible, adds premium depth) ── */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
   pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
   z-index: 0;
-  opacity: 0.4;
+  opacity: 0.1;
 }
 
-/* ── Utility ── */
-.font-display {
-  font-family: var(--font-display);
+/* ── Scroll reveal ─────────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s ease;
 }
-.text-lime {
-  color: #c8f135;
-}
-.bg-lime {
-  background-color: #c8f135;
+.reveal.visible {
+  opacity: 1;
+  transform: none;
 }
