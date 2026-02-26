@@ -16,7 +16,7 @@ app.use(helmet({
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
-  : ['https://path-saga-13m4kqlrk-aryan-s-projects-0a69f7db.vercel.app'];
+  : ['https://path-saga.vercel.app', 'https://path-saga-13m4kqlrk-aryan-s-projects-0a69f7db.vercel.app'];
 
 app.use(
   cors({
