@@ -14,9 +14,15 @@ app.use(helmet({
   crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
 }));
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS
+const envOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
-  : ['https://path-saga.vercel.app', 'https://path-saga-13m4kqlrk-aryan-s-projects-0a69f7db.vercel.app'];
+  : [];
+
+const allowedOrigins = [
+  'https://path-saga.vercel.app',
+  'https://path-saga-13m4kqlrk-aryan-s-projects-0a69f7db.vercel.app',
+  ...envOrigins
+];
 
 app.use(
   cors({
