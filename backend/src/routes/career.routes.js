@@ -1,10 +1,10 @@
 import express from 'express';
-import firebaseAuth from '../middleware/firebaseAuth.middleware.js';
+import authMiddleware from '../middleware/auth.middleware.js';
 import { generateCareer, getCareer } from '../controllers/career.controller.js';
 
 const router = express.Router();
 
-router.post('/generate', firebaseAuth, generateCareer);
-router.get('/:userId', firebaseAuth, getCareer);
+router.post('/generate', authMiddleware, generateCareer);
+router.get('/:userId', authMiddleware, getCareer);
 
 export default router;

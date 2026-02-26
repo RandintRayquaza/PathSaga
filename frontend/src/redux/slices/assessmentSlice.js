@@ -10,7 +10,9 @@ const assessmentSlice = createSlice({
     errorMessage: null,
     missingFields: [],   // Profile fields that must be completed for assessment
     analysis: null,      // Gemini analysis result
-    roadmap: null,       // Gemini roadmap result
+    roadmap: null,       // Specific roadmap details (Phase 1, 2, 3)
+    roadmapId: null,     // The ID of the generated roadmap
+    todos: [],           // Array of tasks associated with the roadmap
     completed: false,
   },
   reducers: {
@@ -23,20 +25,34 @@ const assessmentSlice = createSlice({
     setMissingFields: (s, { payload }) => { s.missingFields = payload || []; },
     setResults:     (s, { payload }) => {
       s.analysis = payload.analysis;
-      s.roadmap = payload.roadmap;
+      s.roadmapId = payload.id;
       s.completed = true;
       s.status = 'done';
     },
     resetAssessment: () => ({
       questions: [], currentStep: 0, answers: {}, status: 'idle',
-      errorMessage: null, missingFields: [], analysis: null, roadmap: null, completed: false,
+      errorMessage: null, missingFields: [], analysis: null, roadmap: null, roadmapId: null, completed: false, todos: [],
     }),
+    setFetchedRoadmap: (s, { payload }) => {
+      s.roadmap = payload;
+    },
+    setTodos: (s, { payload }) => {
+      s.todos = payload;
+    },
+    updateTodo: (s, { payload }) => {
+      const idx = s.todos.findIndex(t => t.id === payload.id);
+      if (idx !== -1) s.todos[idx] = payload;
+    },
+    appendTodo: (s, { payload }) => {
+      s.todos.push(payload);
+    }
   },
 });
 
 export const {
   setQuestions, setAnswer, nextStep, prevStep,
   setStatus, setError, setMissingFields, setResults, resetAssessment,
+  setFetchedRoadmap, setTodos, updateTodo, appendTodo
 } = assessmentSlice.actions;
 
 export default assessmentSlice.reducer;

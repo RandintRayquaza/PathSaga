@@ -1,6 +1,6 @@
 import { db } from '../config/firebase.js';
 import pythonService from '../services/pythonService.js';
-import llmService from '../services/llmService.js';
+import llmController from '../services/llmController.js';
 import careerRecommendationSchema from '../models/careerRecommendation.schema.js';
 import roadmapSchema from '../models/roadmap.schema.js';
 
@@ -11,7 +11,7 @@ const ROADMAPS = 'roadmaps';
 
 export const generateCareer = async (req, res, next) => {
   try {
-    const uid = req.firebaseUser.uid;
+    const uid = req.user.uid;
 
     const [userSnap, assessmentSnap] = await Promise.all([
       db.collection(USERS).doc(uid).get(),
@@ -39,7 +39,8 @@ export const generateCareer = async (req, res, next) => {
       source = 'llm';
     }
 
-    const llmResult = await llmService.generateCareerRecommendation({
+    const llmResult = await llmController.generateCareerRecommendation({
+      userId: uid,
       userProfile,
       assessmentScores: assessmentData,
       pythonResult,
@@ -88,7 +89,7 @@ export const generateCareer = async (req, res, next) => {
 export const getCareer = async (req, res, next) => {
   try {
     const requestedUid = req.params.userId;
-    const callerUid = req.firebaseUser.uid;
+    const callerUid = req.user.uid;
 
     if (requestedUid !== callerUid) {
       return res.status(403).json({ success: false, message: 'Not authorized to view this data', data: null });

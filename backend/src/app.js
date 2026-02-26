@@ -4,7 +4,8 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import authRoutes from './routes/auth.routes.js';
 import assessmentRoutes from './routes/assessment.routes.js';
-import voiceRoutes from './routes/voice.routes.js';
+import chatRoutes from './routes/chat.routes.js';
+import roadmapRoutes from './routes/roadmap.routes.js';
 import errorHandler from './middleware/errorHandler.middleware.js';
 
 const app = express();
@@ -15,7 +16,7 @@ app.use(helmet({
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
-  : ['http://localhost:3000', 'http://localhost:5173'];
+  : ['https://your-vercel-domain.vercel.app'];
 
 app.use(
   cors({
@@ -43,12 +44,7 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-if (process.env.NODE_ENV !== 'production') {
-  app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
-    next();
-  });
-}
+
 
 app.get('/health', (req, res) => {
   res.status(200).json({ success: true, message: 'Server is healthy', data: null });
@@ -56,7 +52,8 @@ app.get('/health', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/assessment', assessmentRoutes);
-app.use('/api/voice', voiceRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/roadmap', roadmapRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ success: false, message: 'Route not found', data: null });

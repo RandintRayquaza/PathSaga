@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../ui/LanguageSwitcher';
 
 export default function Navbar() {
   const isAuth = useSelector((s) => s.auth.isAuthenticated);
+  const { t } = useTranslation();
 
   return (
     <header className="fixed top-0 inset-x-0 z-50 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-900/50">
@@ -12,23 +15,24 @@ export default function Navbar() {
         </Link>
 
         <div className="flex items-center gap-4">
+          <LanguageSwitcher />
           {isAuth ? (
             <Link 
               to="/dashboard" 
               className="text-sm font-medium text-zinc-300 hover:text-zinc-50 transition-colors"
             >
-              Go to Dashboard &rarr;
+              {t("nav.dashboard")} &rarr;
             </Link>
           ) : (
             <>
               <Link to="/login" className="text-sm font-medium text-zinc-400 hover:text-zinc-100 hidden sm:block">
-                Sign in
+                {t("nav.log_in")}
               </Link>
               <Link 
                 to="/signup" 
                 className="text-sm font-medium text-zinc-900 bg-zinc-50 hover:bg-zinc-200 px-4 py-2 rounded-full transition-colors"
               >
-                Create account
+                {t("auth.btn_signup")}
               </Link>
             </>
           )}

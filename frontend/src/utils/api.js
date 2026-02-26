@@ -1,8 +1,8 @@
 import axios from 'axios';
-import { store } from '../redux/store'; // assuming store is exported from here
+
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
+  baseURL: import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -11,10 +11,10 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    // Get the auth state directly from the Redux store
-    const state = store.getState();
-    const token = state.auth.user?.token || state.auth.user?.stsTokenManager?.accessToken;
-    
+    const token = localStorage.getItem('token');
+    const requestId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(7);
+    config.headers['x-request-id'] = requestId;
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

@@ -1,28 +1,56 @@
 import express from 'express';
 import { body } from 'express-validator';
-import firebaseAuth from '../middleware/firebaseAuth.middleware.js';
-import { generateRoadmap, getRoadmap, updateProgress } from '../controllers/roadmap.controller.js';
+import authMiddleware from '../middleware/auth.middleware.js';
+import * as roadmapController from '../controllers/roadmap.controller.js';
 
 const router = express.Router();
 
 router.post(
   '/generate',
-  firebaseAuth,
+  authMiddleware,
   [body('careerGoal').notEmpty().withMessage('careerGoal is required')],
-  generateRoadmap
+  roadmapController.generateRoadmap
 );
 
-router.get('/:userId', firebaseAuth, getRoadmap);
+// MOST SPECIFIC ROUTES FIRST
+// Get specifically by roadmap ID
+router.get('/id/:roadmapId', authMiddleware, roadmapController.getRoadmapById);
+
+// Get explicitly Roadmap History for a user
+router.get('/history/:userId', authMiddleware, roadmapController.getAllRoadmaps);
+
+// Dynamic path matching comes after explicit paths
+router.get('/:userId', authMiddleware, roadmapController.getRoadmap);
 
 router.put(
   '/progress',
-  firebaseAuth,
+  authMiddleware,
   [
     body('roadmapId').notEmpty().withMessage('roadmapId is required'),
     body('progressPercentage').isFloat({ min: 0, max: 100 }).withMessage('progressPercentage must be 0–100'),
     body('currentPhase').isInt({ min: 1, max: 3 }).withMessage('currentPhase must be 1, 2, or 3'),
   ],
-  updateProgress
+  roadmapController.updateProgress
 );
+
+router.post(
+  '/:roadmapId/generate-phase-todos',
+  authMiddleware,
+  [
+    body('phaseNumber').isInt({ min: 1, max: 3 }).withMessage('phaseNumber must be 1, 2, or 3')
+  ],
+  roadmapController.generatePhaseTodos
+);
+
+router.post(
+  '/unlock-next-phase',
+  authMiddleware,
+  [
+    body('roadmapId').notEmpty().withMessage('roadmapId is required')
+  ],
+  roadmapController.unlockNextPhase
+);
+
+router.delete('/:roadmapId', authMiddleware, roadmapController.deleteRoadmap);
 
 export default router;

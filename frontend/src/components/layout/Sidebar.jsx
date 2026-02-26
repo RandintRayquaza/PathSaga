@@ -3,18 +3,20 @@ import { LayoutDashboard, Compass, Sparkles, User, Settings, LogOut } from 'luci
 import { useDispatch } from 'react-redux';
 import { logout } from '../../redux/slices/authSlice';
 
+import { useTranslation } from 'react-i18next';
+
 const NAV_ITEMS = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/assessment',icon: Compass,         label: 'Path Assessment' },
-  { to: '/aichat',    icon: Sparkles,        label: 'AI Coach' },
+  { to: '/dashboard', icon: LayoutDashboard, labelKey: 'nav.dashboard' },
+  { to: '/assessment',icon: Compass,         labelKey: 'nav.assessment' },
+  { to: '/aichat',    icon: Sparkles,        labelKey: 'nav.ai_coach' },
 ];
 
 const PREF_ITEMS = [
-  { to: '/profile',   icon: User,            label: 'Profile' },
-  { to: '/settings',  icon: Settings,        label: 'Settings' },
+  { to: '/profile',   icon: User,            labelKey: 'nav.profile' },
+  { to: '/settings',  icon: Settings,        labelKey: 'nav.settings' },
 ];
 
-function NavLink({ to, icon: Icon, label }) {
+function NavLink({ to, icon: Icon, labelKey, t }) {
   const { pathname } = useLocation();
   const isActive = pathname.startsWith(to);
 
@@ -28,7 +30,7 @@ function NavLink({ to, icon: Icon, label }) {
       }`}
     >
       <Icon className={`w-4 h-4 ${isActive ? 'text-violet-400' : ''}`} />
-      {label}
+      {t(labelKey)}
     </Link>
   );
 }
@@ -36,6 +38,7 @@ function NavLink({ to, icon: Icon, label }) {
 export default function Sidebar() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <aside className="hidden lg:flex flex-col w-[240px] fixed top-0 left-0 bottom-0 bg-zinc-950 border-r border-zinc-900 overflow-y-auto">
@@ -47,16 +50,16 @@ export default function Sidebar() {
 
       <nav className="flex-1 px-3 space-y-8">
         <div>
-          <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-zinc-500 mb-2">My Path</p>
+          <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-zinc-500 mb-2">{t("nav.my_path")}</p>
           <div className="space-y-1">
-            {NAV_ITEMS.map((item) => <NavLink key={item.to} {...item} />)}
+            {NAV_ITEMS.map((item) => <NavLink key={item.to} {...item} t={t} />)}
           </div>
         </div>
 
         <div>
-          <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-zinc-500 mb-2">Preferences</p>
+          <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-zinc-500 mb-2">{t("nav.preferences")}</p>
           <div className="space-y-1">
-            {PREF_ITEMS.map((item) => <NavLink key={item.to} {...item} />)}
+            {PREF_ITEMS.map((item) => <NavLink key={item.to} {...item} t={t} />)}
           </div>
         </div>
       </nav>
@@ -70,7 +73,7 @@ export default function Sidebar() {
           className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/40 transition-colors cursor-pointer text-left"
         >
           <LogOut className="w-4 h-4" />
-          Sign out
+          {t("nav.sign_out")}
         </button>
       </div>
     </aside>

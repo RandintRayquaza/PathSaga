@@ -1,7 +1,8 @@
 import { db } from '../config/firebase.js';
-import llmService from '../services/llmService.js';
+import llmController from '../services/llmController.js';
 import roadmapSchema from '../models/roadmap.schema.js';
 import { getMissingFields } from './auth.controller.js';
+import { getCached, setCached } from '../services/assessmentCache.js';
 
 const USERS = 'users';
 const ROADMAPS = 'roadmaps';
@@ -9,7 +10,7 @@ const ROADMAPS = 'roadmaps';
 // POST /api/assessment/generate-questions
 export const generateQuestions = async (req, res, next) => {
   try {
-    const uid = req.firebaseUser.uid;
+    const uid = req.user.uid;
 
     const userSnap = await db.collection(USERS).doc(uid).get();
     if (!userSnap.exists) {
@@ -28,13 +29,49 @@ export const generateQuestions = async (req, res, next) => {
       });
     }
 
+    // Phase 3: Immediate Cooldown Protection with a Firestore Transaction lock
+    const cooldownMs = 60 * 1000;
+    
+    await db.runTransaction(async (transaction) => {
+      const userRef = db.collection(USERS).doc(uid);
+      const userDoc = await transaction.get(userRef);
+      const data = userDoc.data();
+      const lastReq = data.lastAssessmentRequest || 0;
+      const now = Date.now();
+
+      if (now - lastReq < cooldownMs) {
+        const waitSecs = Math.ceil((cooldownMs - (now - lastReq)) / 1000);
+        const err = new Error(`Please wait ${waitSecs} seconds before generating a new assessment.`);
+        err.statusCode = 429;
+        throw err;
+      }
+
+      // Update timestamp inside transaction lock immediately
+      transaction.update(userRef, { lastAssessmentRequest: now });
+    });
+
+    // Check cache first — skip Gemini entirely
+    const cached = getCached(uid, profile.targetDomain, profile.skillLevel);
+    if (cached) {
+      return res.status(200).json({
+        success: true,
+        message: 'Questions generated successfully',
+        data: cached,
+        fromCache: true
+      });
+    }
+
     console.log(`[Assessment] Generating questions for ${uid} — domain: ${profile.targetDomain}, level: ${profile.skillLevel}`);
-    const result = await llmService.generateAssessmentQuestions(profile);
+
+    const result = await llmController.generateAssessmentQuestions({ userId: uid, profile });
+
+    setCached(uid, profile.targetDomain, profile.skillLevel, result);
 
     return res.status(200).json({
       success: true,
       message: 'Questions generated successfully',
       data: result,
+      fromCache: false
     });
   } catch (err) {
     next(err);
@@ -44,7 +81,7 @@ export const generateQuestions = async (req, res, next) => {
 // POST /api/assessment/submit-answers
 export const submitAnswers = async (req, res, next) => {
   try {
-    const uid = req.firebaseUser.uid;
+    const uid = req.user.uid;
     const { questions, answers } = req.body;
 
     if (!questions || !Array.isArray(questions) || questions.length === 0) {
@@ -61,49 +98,75 @@ export const submitAnswers = async (req, res, next) => {
 
     const profile = userSnap.data();
 
-    console.log(`[Assessment] Analyzing answers for ${uid}…`);
-    const analysisResult = await llmService.analyzeAssessmentAnswers({ profile, questions, answers });
-
-    console.log(`[Assessment] Generating roadmap for ${uid}…`);
-    const roadmapResult = await llmService.generateFullRoadmap({
-      profile,
-      analysis: analysisResult.analysis,
+    console.log(`[Assessment] Analyzing answers & generating roadmap for ${uid} (Combined LLM Call)…`);
+    const combinedResult = await llmController.processAssessmentAndRoadmap({ 
+      userId: uid, 
+      profile, 
+      questions, 
+      answers 
     });
 
-    // Delete any old roadmap for this user before saving new one
-    const oldSnap = await db.collection(ROADMAPS).where('userId', '==', uid).get();
-    const deleteOps = oldSnap.docs.map((d) => d.ref.delete());
-    await Promise.all(deleteOps);
+    // Transactional Roadmap Save:
+    // We must find the user's currently 'active' roadmap (if any).
+    // Mark it 'inactive'.
+    // Save the new roadmap as 'active' with version + 1.
+    const activeRoadmapsSnap = await db.collection(ROADMAPS)
+      .where('userId', '==', uid)
+      .where('status', '==', 'active')
+      .get();
+      
+    let oldVersion = 0;
+    const oldRefs = [];
+    if (!activeRoadmapsSnap.empty) {
+       activeRoadmapsSnap.docs.forEach(doc => {
+         const data = doc.data();
+         if (data.version > oldVersion) oldVersion = data.version;
+         oldRefs.push(doc.ref);
+       });
+    }
 
-    // Store combined result in Firestore
-    const doc = roadmapSchema({
+    const newDocRef = db.collection(ROADMAPS).doc();
+
+    const newDocData = roadmapSchema({
       userId: uid,
-      analysis: analysisResult.analysis,
-      recommendedRoles: analysisResult.recommendedRoles,
-      levelAssessment: analysisResult.levelAssessment,
-      confidenceSummary: analysisResult.confidenceSummary,
-      phase1: roadmapResult.roadmap?.phase1 || [],
-      phase2: roadmapResult.roadmap?.phase2 || [],
-      phase3: roadmapResult.roadmap?.phase3 || [],
-      timelineEstimate: roadmapResult.timelineEstimate || null,
-      careerStrategy: roadmapResult.careerStrategy || {},
-      nextSteps: roadmapResult.nextSteps || [],
+      version: oldVersion + 1,
+      status: 'active',
+      analysis: combinedResult.analysis,
+      recommendedRoles: combinedResult.recommendedRoles,
+      levelAssessment: combinedResult.levelAssessment,
+      confidenceSummary: combinedResult.confidenceSummary,
+      phase1: combinedResult.roadmap?.phase1 || [],
+      phase2: combinedResult.roadmap?.phase2 || [],
+      phase3: combinedResult.roadmap?.phase3 || [],
+      timelineEstimate: combinedResult.timelineEstimate || null,
+      careerStrategy: combinedResult.careerStrategy || {},
+      nextSteps: combinedResult.nextSteps || [],
     });
 
-    const saved = await db.collection(ROADMAPS).add(doc);
-
-    // Mark user as having completed assessment
-    await db.collection(USERS).doc(uid).update({
-      assessmentComplete: true,
-      updatedAt: new Date().toISOString(),
+    // Run strictly awaited transaction
+    await db.runTransaction(async (transaction) => {
+      // 1. Archive old roadmaps
+      for (const ref of oldRefs) {
+         transaction.update(ref, { status: 'inactive', updatedAt: new Date().toISOString() });
+      }
+      // 2. Insert new
+      transaction.set(newDocRef, newDocData);
+      // 3. Update user profile to reflect completion
+      const userRef = db.collection(USERS).doc(uid);
+      transaction.update(userRef, {
+        assessmentComplete: true,
+        updatedAt: new Date().toISOString()
+      });
     });
 
-    console.log(`[Assessment] Complete for ${uid} — roadmap saved: ${saved.id}`);
+    console.log(`[Assessment] Complete for ${uid} — roadmap saved: ${newDocRef.id} (Version ${newDocData.version})`);
 
     return res.status(200).json({
       success: true,
-      message: 'Assessment submitted and roadmap generated',
-      data: { id: saved.id, ...doc },
+      roadmapId: newDocRef.id,
+      version: newDocData.version,
+      message: 'Assessment submitted and roadmap securely generated',
+      data: { id: newDocRef.id, ...newDocData },
     });
   } catch (err) {
     next(err);
@@ -113,7 +176,7 @@ export const submitAnswers = async (req, res, next) => {
 // GET /api/assessment/results
 export const getResults = async (req, res, next) => {
   try {
-    const uid = req.firebaseUser.uid;
+    const uid = req.user.uid;
 
     const snap = await db
       .collection(ROADMAPS)

@@ -1,14 +1,17 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import Typewriter from '../ui/Typewriter';
+import { useTranslation } from 'react-i18next';
 
 export default function HeroSection() {
+  const { t } = useTranslation();
+
   const TYPEWRITER_PHRASES = [
-    "how to choose.",
-    "how to start.",
-    "how to build skills.",
-    "how to move forward.",
-    "how to get hired.",
+    t('hero.typewriter_1', "how to choose."),
+    t('hero.typewriter_2', "how to start."),
+    t('hero.typewriter_3', "how to build skills."),
+    t('hero.typewriter_4', "how to move forward."),
+    t('hero.typewriter_5', "how to get hired."),
   ];
 
   return (
@@ -16,9 +19,9 @@ export default function HeroSection() {
       <div className="max-w-5xl mx-auto w-full animate-fade-in relative z-10">
         
         <h1 className="font-display text-[2.5rem] leading-[1.1] sm:text-5xl md:text-6xl lg:text-7xl text-zinc-50 tracking-tight mb-8">
-          <span className="block opacity-90">You got your marks.</span>
+          <span className="block opacity-90">{t('hero.title_line1', "You got your marks.")}</span>
           <span className="block text-zinc-400 mt-2 sm:mt-4">
-            Nobody told you{' '}
+            {t('hero.title_line2', "Nobody told you ")}
             <span className="block sm:inline mt-2 sm:mt-0 text-violet-400">
               <Typewriter phrases={TYPEWRITER_PHRASES} />
             </span>
@@ -26,9 +29,8 @@ export default function HeroSection() {
         </h1>
         
         <p className="text-zinc-400 text-base md:text-xl max-w-2xl mb-12 sm:mb-16 leading-relaxed">
-          The education system stops at graduation. PathSaga starts there. 
-          Map your unique strengths to the right career, get a step-by-step roadmap, 
-          and navigate with <span className="text-zinc-300 font-medium">Path AI</span> built for you.
+          {t('hero.description', "The education system stops at graduation. PathSaga starts there. Map your unique strengths to the right career, get a step-by-step roadmap, and navigate with ")}
+          <span className="text-zinc-300 font-medium">Path AI</span> {t('hero.description_suffix', "built for you.")}
         </p>
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
@@ -37,7 +39,7 @@ export default function HeroSection() {
             className="group relative inline-flex items-center justify-center gap-3 bg-zinc-50 hover:bg-zinc-200 text-zinc-950 px-8 py-4 rounded-full font-semibold transition-all duration-300 w-full sm:w-auto overflow-hidden"
           >
             <span className="relative z-10 flex items-center gap-2">
-              Start your journey <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              {t('hero.cta', "Start your journey")} <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </span>
           </Link>
         </div>

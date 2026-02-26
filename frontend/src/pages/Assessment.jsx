@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,8 +16,15 @@ export default function Assessment() {
   const navigate  = useNavigate();
   const { user }  = useSelector((s) => s.auth);
   const { questions, currentStep, answers, status, errorMessage, missingFields } = useSelector((s) => s.assessment);
+  const [isFiring, setIsFiring] = useState(false);
+  const debounceRef = useRef(null);
 
   const fetchQuestions = useCallback(async () => {
+    if (isFiring || status === 'generating') return;
+    if (debounceRef.current) return;
+    debounceRef.current = setTimeout(() => { debounceRef.current = null; }, 2000);
+
+    setIsFiring(true);
     dispatch(setStatus('generating'));
     try {
       const res = await api.post('/api/assessment/generate-questions');
@@ -37,30 +44,27 @@ export default function Assessment() {
       
       toast.error(msg);
       dispatch(setError(msg));
+    } finally {
+      setIsFiring(false);
     }
-  }, [dispatch]);
+  }, [dispatch, isFiring, status]);
 
-  useEffect(() => {
-    if (questions.length === 0 && status === 'idle') {
-      fetchQuestions();
-    }
-  }, [fetchQuestions, questions.length, status]);
+  // useEffect removed to prevent auto-triggering
+  // The user will click "Start Assessment" manually
 
   const handleSubmit = async () => {
+    if (isFiring || status === 'submitting') return;
+    if (debounceRef.current) return;
+    debounceRef.current = setTimeout(() => { debounceRef.current = null; }, 2000);
+    
+    setIsFiring(true);
     dispatch(setStatus('submitting'));
     try {
       const res = await api.post('/api/assessment/submit-answers', { questions, answers });
       if (res.data?.success) {
         dispatch(setResults({
           analysis: res.data.data.analysis,
-          roadmap: {
-            phase1: res.data.data.phase1,
-            phase2: res.data.data.phase2,
-            phase3: res.data.data.phase3,
-            timelineEstimate: res.data.data.timelineEstimate,
-            careerStrategy: res.data.data.careerStrategy,
-            nextSteps: res.data.data.nextSteps,
-          },
+          id: res.data.data.id,
         }));
         dispatch(setUserResults(res.data.data));
         navigate('/dashboard');
@@ -69,6 +73,8 @@ export default function Assessment() {
       const msg = err.response?.data?.message || 'Submission failed. Please try again.';
       toast.error(msg);
       dispatch(setStatus('idle'));
+    } finally {
+      setIsFiring(false);
     }
   };
 
@@ -144,7 +150,22 @@ export default function Assessment() {
     );
   }
 
-  if (!q) return null;
+  if (!q) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center gap-4 px-4">
+        <ClipboardList className="w-10 h-10 text-violet-400" />
+        <h2 className="font-display text-xl text-zinc-50 font-medium">Ready to take the assessment?</h2>
+        <p className="text-zinc-400 text-sm text-center max-w-sm mb-4">
+          Click the button below to generate personalized questions for your target domain.
+        </p>
+        <button onClick={fetchQuestions}
+          disabled={isFiring}
+          className="bg-violet-400 text-zinc-950 font-semibold px-6 py-3 rounded-xl hover:bg-violet-300 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+          Start Assessment
+        </button>
+      </div>
+    );
+  }
 
   const difficultyColor = { easy: 'text-violet-400', medium: 'text-amber-400', hard: 'text-red-400' };
 
@@ -236,7 +257,7 @@ export default function Assessment() {
               {isLast ? (
                 <button
                   onClick={handleSubmit}
-                  disabled={!hasAnswer}
+                  disabled={!hasAnswer || isFiring}
                   className="flex items-center gap-2 bg-violet-400 text-zinc-950 font-semibold px-6 py-2.5 rounded-xl hover:bg-violet-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm"
                 >
                   <Send className="w-4 h-4" /> Submit Assessment

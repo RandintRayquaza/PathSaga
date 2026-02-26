@@ -13,14 +13,6 @@ const pythonService = {
     return response.data;
   },
 
-  scoreVoiceInput: async (speechText, userProfile) => {
-    const response = await axios.post(
-      `${PYTHON_SERVICE_URL}/api/voice-score`,
-      { speechText, userProfile },
-      { timeout: TIMEOUT_MS }
-    );
-    return response.data;
-  },
 };
 
 export default pythonService;

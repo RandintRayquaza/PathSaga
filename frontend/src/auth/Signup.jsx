@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { loginSuccess, loginFailure } from '../redux/slices/authSlice';
-import { signInWithGoogle } from '../config/firebase';
+import { auth, signInWithGoogle } from '../config/firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import Button from '../components/ui/Button';
@@ -21,7 +22,10 @@ export default function Signup() {
       const result = await signInWithGoogle();
       const token = await result.user.getIdToken();
       const response = await api.post('/api/auth/google', { token, email: result.user.email });
-      dispatch(loginSuccess({ ...response.data.data, token }));
+      const backendToken = response.data.data.token;
+      localStorage.setItem('token', backendToken);
+    
+      dispatch(loginSuccess({ ...response.data.data.user, token: backendToken }));
       navigate('/dashboard');
     } catch (err) {
       toast.error('Google Sign-Up failed');
@@ -35,19 +39,27 @@ export default function Signup() {
     
     setLoading(true);
     try {
-      const response = await api.post('/api/auth/register', form);
-      const { user, token } = response.data.data;
-      dispatch(loginSuccess({ user, token }));
+      const result = await createUserWithEmailAndPassword(auth, form.email, form.password);
+      const token = await result.user.getIdToken();
+      const response = await api.post('/api/auth/register', { ...form, token });
+      const { user, token: backendToken } = response.data.data;
+      localStorage.setItem('token', backendToken);
+    
+      dispatch(loginSuccess({ user, token: backendToken }));
       navigate('/dashboard');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Sign up failed');
+      if (err.code === 'auth/email-already-in-use') {
+        toast.error('Email is already in use');
+      } else {
+        toast.error(err.response?.data?.message || err.message || 'Sign up failed');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-[100dvh] bg-zinc-950 flex flex-row-reverse">
+    <div className="min-h-dvh bg-zinc-950 flex flex-row-reverse">
       {/* Right brand panel — desktop only */}
       <div className="hidden lg:flex flex-col justify-between px-16 py-12 flex-1 border-l border-zinc-900 bg-zinc-950/50">
         <div className="flex justify-end">

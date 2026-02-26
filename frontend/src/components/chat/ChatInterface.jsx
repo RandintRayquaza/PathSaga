@@ -2,13 +2,15 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, CornerDownLeft } from 'lucide-react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 export default function ChatInterface() {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState([
     {
       id: 1,
       role: 'assistant',
-      content: "Hello. I have analyzed your assessment results, skill gaps, and current trajectory. I am ready to guide you. What specific question do you have about your path?",
+      content: t('data.chat_msg_1', "Hello. I have analyzed your assessment results, skill gaps, and current trajectory. I am ready to guide you. What specific question do you have about your path?"),
     }
   ]);
   const [input, setInput] = useState('');
@@ -26,12 +28,12 @@ export default function ChatInterface() {
 
     try {
       const history = messages.filter(m => m.id !== 1).map(m => ({ role: m.role, content: m.content }));
-      const res = await api.post('/api/voice/process', { speechText: text, history });
+      const res = await api.post('/api/chat/process', { message: text, history });
       if (res.data.success) {
-        setMessages(prev => [...prev, { id: Date.now() + 1, role: 'assistant', content: res.data.data?.response || res.data.data?.llmResponse }]);
+        setMessages(prev => [...prev, { id: Date.now() + 1, role: 'assistant', content: res.data.data.response }]);
       } else throw new Error();
     } catch {
-      toast.error('System error. Please retry.');
+      toast.error(t('auth.err_general', 'System error. Please retry.'));
     } finally { 
       setIsTyping(false); 
     }
@@ -45,7 +47,7 @@ export default function ChatInterface() {
             {msg.role === 'assistant' ? (
               // AI: Prose-style with left accent border (NO bubble)
               <div className="max-w-3xl border-l-2 border-violet-500/50 pl-5 py-1">
-                <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold block mb-2">System Response</span>
+                <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold block mb-2">{t('chat.sys_resp', 'System Response')}</span>
                 <p className="text-zinc-100 text-[15px] leading-relaxed whitespace-pre-wrap font-body">
                   {msg.content}
                 </p>
@@ -61,7 +63,7 @@ export default function ChatInterface() {
         
         {isTyping && (
           <div className="max-w-3xl border-l-2 border-violet-500/50 pl-5 py-1 animate-pulse">
-            <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold block mb-2">Processing</span>
+            <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold block mb-2">{t('chat.processing', 'Processing')}</span>
             <div className="w-1.5 h-4 bg-violet-400 mt-1" /> {/* Blinking cursor substitute */}
           </div>
         )}
@@ -77,14 +79,15 @@ export default function ChatInterface() {
           <textarea
             value={input}
             rows={1}
+            disabled={isTyping}
             onChange={(e) => {
               setInput(e.target.value);
               e.target.style.height = 'auto';
               e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
             }}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-            placeholder="Initialize query..."
-            className="flex-1 bg-transparent text-zinc-100 placeholder-zinc-600 px-0 py-3.5 outline-none resize-none text-sm font-body leading-relaxed max-h-[120px]"
+            placeholder={isTyping ? t('chat.processing_placeholder', "Processing...") : t('chat.init_query', "Initialize query...")}
+            className="flex-1 bg-transparent text-zinc-100 placeholder-zinc-600 px-0 py-3.5 outline-none resize-none text-sm font-body leading-relaxed max-h-[120px] disabled:opacity-50"
           />
           <button
             onClick={handleSend}

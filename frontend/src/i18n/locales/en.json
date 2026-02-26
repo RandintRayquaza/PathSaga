@@ -1,4 +1,16 @@
 {
+  "hero": {
+    "typewriter_1": "how to choose.",
+    "typewriter_2": "how to start.",
+    "typewriter_3": "how to build skills.",
+    "typewriter_4": "how to move forward.",
+    "typewriter_5": "how to get hired.",
+    "title_line1": "You got your marks.",
+    "title_line2": "Nobody told you ",
+    "description": "The education system stops at graduation. PathSaga starts there. Map your unique strengths to the right career, get a step-by-step roadmap, and navigate with ",
+    "description_suffix": "built for you.",
+    "cta": "Start your journey"
+  },
   "landing": {
     "hero_tag": "AI Career Guidance",
     "hero_title_1": "Find Your Path.",
@@ -18,7 +30,15 @@
     "get_started": "Get Started",
     "language": "Language",
     "english": "English",
-    "hindi": "हिंदी"
+    "hindi": "हिंदी",
+    "assessment": "Path Assessment",
+    "profile": "Profile",
+    "settings": "Settings",
+    "home": "Home",
+    "path": "Path",
+    "coach": "Coach",
+    "my_path": "My Path",
+    "preferences": "Preferences"
   },
   "footer": {
     "brand_desc": "AI-powered career clarity for every student and professional.",
@@ -39,7 +59,7 @@
     "match": "AI Career Match",
     "gap": "Skill Gap Detection",
     "roadmap": "3-Phase Roadmap",
-    "voice": "Voice Assistant"
+    "voice": "AI Assistant"
   },
   "problem": {
     "tag": "The Problem",
@@ -67,7 +87,7 @@
     "f4_title": "3-Phase Roadmap",
     "f4_desc": "Phase 1: Foundation. Phase 2: Build. Phase 3: Launch. A clear, staged plan tailored to your starting point.",
     "f5_tag": "Coming Soon",
-    "f5_title": "Voice Assistant",
+    "f5_title": "AI Assistant",
     "f5_desc": "Ask questions, get guidance, and receive coaching through a natural conversational interface."
   },
   "how_it_works": {
@@ -176,15 +196,43 @@
     "tasks_title": "Actions",
     "tasks_empty": "Tasks will appear based on your roadmap."
   },
+  "dashboard_new": {
+    "welcome_back": "Welcome Back",
+    "historical_view": "Historical View",
+    "your_path": "Your path: ",
+    "journey_map": "Your Journey Map",
+    "loading_roadmap": "Loading your roadmap...",
+    "no_roadmap_title": "No Roadmap Generated Yet",
+    "no_roadmap_desc": "You haven't taken the career assessment yet. Complete it to generate your personalized step-by-step roadmap.",
+    "start_assessment": "Start Assessment",
+    "phase_locked_desc": "Complete previous phase to unlock.",
+    "topic_overview": "Topic Overview",
+    "action_items": "Action Items",
+    "completed_fraction": "{{completed}} / {{total}} Completed",
+    "generating_tasks": "AI Coach is generating exactly 10 tasks...",
+    "amazing_work": "Amazing work!",
+    "phase_completed_desc": "You have completed all {{total}} tasks for Phase {{phase}}. You're ready to proceed to the next phase.",
+    "unlock_phase": "Unlock Phase {{next}}",
+    "action_center": "Action Center",
+    "talk_ai": "Talk to AI Coach",
+    "retake_assessment": "Retake Assessment",
+    "edit_profile": "Edit Profile Details",
+    "task_completion": "Task Completion",
+    "tasks_completed_count": "{{completed}} of {{total}} Tasks Completed",
+    "journey_history": "Journey History",
+    "version": "Version {{v}}",
+    "archived": "Archived",
+    "active": "Active",
+    "skills_assessment": "Skills Assessment"
+  },
   "aichat": {
     "tag": "AI Coach",
     "title": "Talk with our AI",
-    "desc": "Get instant feedback, brainstorm career paths, or ask specific questions about your skills and roadmap. Use text or voice to interact.",
+    "desc": "Get instant feedback, brainstorm career paths, or ask specific questions about your skills and roadmap.",
     "coach": "PathSaga Coach",
     "online": "Online",
     "plh_ask": "Ask me anything about your career...",
-    "btn_stop": "Stop recording",
-    "btn_mic": "Use voice input"
+    "btn_stop": "Stop recording"
   },
   "notfound": {
     "title": "Page not found",
@@ -241,5 +289,11 @@
     "q7o4": "Researching, analysing, and generating insights",
     "chat_msg_1": "Hi! I'm your PathSaga AI career coach. How can I help you build your future today?",
     "chat_msg_ai": "That sounds like a solid plan. Have you considered exploring tech combinations with your current skill set to stand out?"
+  },
+  "chat": {
+    "sys_resp": "System Response",
+    "processing": "Processing",
+    "processing_placeholder": "Processing...",
+    "init_query": "Initialize query..."
   }
 }

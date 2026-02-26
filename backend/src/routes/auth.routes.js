@@ -1,16 +1,19 @@
 import express from 'express';
 import { body } from 'express-validator';
-import firebaseAuth from '../middleware/firebaseAuth.middleware.js';
-import { register, getMe, updateProfile, deleteAccount } from '../controllers/auth.controller.js';
+import authMiddleware from '../middleware/auth.middleware.js';
+import { register, login, googleAuth, getMe, updateProfile, deleteAccount } from '../controllers/auth.controller.js';
 
 const router = express.Router();
 
-router.post('/register', firebaseAuth, register);
-router.get('/me', firebaseAuth, getMe);
+router.post('/register', register);
+router.post('/login', login);
+router.post('/google', googleAuth);
+
+router.get('/me', authMiddleware, getMe);
 
 router.put(
   '/update-profile',
-  firebaseAuth,
+  authMiddleware,
   [
     body('name').optional().trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters'),
     body('educationType').optional().isIn(['school', 'college']).withMessage('educationType must be school or college'),
@@ -22,6 +25,6 @@ router.put(
   updateProfile
 );
 
-router.delete('/delete-account', firebaseAuth, deleteAccount);
+router.delete('/delete-account', authMiddleware, deleteAccount);
 
 export default router;
